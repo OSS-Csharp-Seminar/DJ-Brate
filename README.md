@@ -6,7 +6,9 @@
 
 ## Project Overview
 
-DJ Brate is a student college project built as a full-stack web application. Users describe how they're feeling - by writing a free prompt, selecting a mood, picking genres, or adjusting energy sliders - and the app uses the **Spotify API** combined with an **AI layer** to generate personalized playlists, suggest songs, and build listening statistics over time.
+DJ Brate is a project built as a full-stack web application. Users describe how they're feeling - by writing a free prompt, selecting a mood, picking genres, or adjusting energy sliders - and the app uses the **Spotify API** combined with an **AI layer** to generate personalized playlists tailored to their actual taste, not just generic recommendations.
+
+The app has a fully responsive UI where users can browse their generated playlists, preview songs directly in the browser, check their listening statistics, and generate new playlists at any time. The AI gets smarter with every session - it learns what you actually enjoy and builds playlists around your real listening habits, not just the first song you happened to play once.
 
 The project integrates **Model Context Protocol (MCP)** to allow the AI model to directly interact with Spotify as a tool, making suggestions dynamic and context-aware rather than rule-based.
 
@@ -23,23 +25,23 @@ The project integrates **Model Context Protocol (MCP)** to allow the AI model to
 ### Spotify Integration
 
 4. OAuth 2.0 login - users connect their real Spotify account securely
-5. Reads the user's top tracks and listening history to personalize suggestions
-6. Generates a playlist using Spotify's Recommendations API based on mood-mapped audio parameters
+5. Reads the user's full listening history, top tracks, and top artists to understand their genuine taste
+6. Generates a playlist using Spotify's Recommendations API seeded by mood-mapped audio parameters and the user's actual favourite artists and tracks
 7. Saves the generated playlist directly to the user's Spotify library
-8. Plays 30-second song previews inside the app
+8. Plays 30-second song previews inside the app with a built-in player
 
 ### AI-Powered Suggestions
 
 9. AI interprets the user's prompt and maps it to Spotify audio feature targets (valence, energy, tempo, danceability)
 10. Automatically generates a playlist name and description based on the detected mood
-11. Learns from user feedback - liked and skipped tracks improve future suggestions
+11. Learns from user feedback over time - liked and skipped tracks are tracked so future playlists reflect what you actually enjoy, not just what you listened to once
 12. Uses MCP to let the AI call Spotify tools dynamically as part of its reasoning, rather than following static rules
 
-### Statistics & Analytics Dashboard
+### Responsive UI
 
-13. Mood history visualized over time with charts
-14. Top genres and artists broken down per mood state
-15. Listening pattern analysis - energy and valence trends across sessions
+13. Clean, responsive interface that works on desktop and mobile
+14. Dedicated playlist view where users can browse all their generated playlists and preview songs without leaving the app
+15. Separate statistics page showing mood history, top genres, and listening trends over time - with the option to generate a new playlist at any point
 
 ---
 
@@ -77,7 +79,6 @@ The project integrates **Model Context Protocol (MCP)** to allow the AI model to
 > **Note:** Full track playback requires the user to have a Spotify Premium subscription. For the purposes of this project, 30-second previews are used for in-app listening, while full songs open in the user's Spotify app via deep links.
 
 ---
-
 
 ## Getting Started
 
