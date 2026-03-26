@@ -11,3 +11,23 @@ obj/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+
+# .NET
+*.suo
+*.userprefs
+*.DS_Store
+.idea/
+
+# Environment / secrets
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+*.env
+.env
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.db

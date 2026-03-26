@@ -1,0 +1,115 @@
+.auth-card {
+    width: 100%;
+    max-width: 380px;
+    background-color: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.auth-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+.auth-logo-icon {
+    font-size: 1.8rem;
+}
+
+.auth-logo-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.auth-tabs {
+    display: flex;
+    background-color: #0d0d0d;
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.auth-tab {
+    flex: 1;
+    display: block;
+    text-align: center;
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+    text-decoration: none;
+}
+
+.auth-tab.active {
+    background-color: #1f1f1f;
+    color: #ffffff;
+}
+
+.auth-tab:hover:not(.active) {
+    color: #aaa;
+}
+
+.auth-error {
+    background-color: rgba(255, 80, 80, 0.1);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    border-radius: 8px;
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    padding: 0.65rem 0.9rem;
+    margin: -0.5rem 0;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #888;
+    letter-spacing: 0.03em;
+}
+
+.form-group input {
+    background-color: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+    font-family: inherit;
+}
+
+.form-group input:focus {
+    border-color: #1db954;
+}
+
+.form-group input::placeholder {
+    color: #444;
+}
+
+.auth-form .btn-primary.btn-full {
+    margin-top: 0.5rem;
+}

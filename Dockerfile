@@ -1,14 +1,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
- 
-COPY ["DJBrate.API/DJBrate.API.csproj", "DJBrate.API/"]
-RUN dotnet restore "DJBrate.API/DJBrate.API.csproj"
- 
+
+COPY ["DJBrate.Web/DJBrate.Web.csproj", "DJBrate.Web/"]
+COPY ["DJBrate.Application/DJBrate.Application.csproj", "DJBrate.Application/"]
+COPY ["DJBrate.Infrastructure/DJBrate.Infrastructure.csproj", "DJBrate.Infrastructure/"]
+COPY ["DJBrate.Domain/DJBrate.Domain.csproj", "DJBrate.Domain/"]
+RUN dotnet restore "DJBrate.Web/DJBrate.Web.csproj"
+
 COPY . .
-WORKDIR "/src/DJBrate.API"
-RUN dotnet publish "DJBrate.API.csproj" -c Release -o /app/publish --no-restore
- 
+WORKDIR "/src/DJBrate.Web"
+RUN dotnet publish "DJBrate.Web.csproj" -c Release -o /app/publish --no-restore
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "DJBrate.API.dll"]
+ENTRYPOINT ["dotnet", "DJBrate.Web.dll"]

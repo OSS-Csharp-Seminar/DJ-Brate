@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(sed 's/namespace DJBrate\\\\.API\\\\.Migrations/namespace DJBrate.Infrastructure.Migrations/g; s/using DJBrate\\\\.API\\\\.Data/using DJBrate.Infrastructure.Data/g' \"e:/DJ-Brate/DJBrate.API/Migrations/20260318135219_InitialCreate.cs\")",
+      "Bash(\"e:/DJ-Brate/DJBrate.Infrastructure/Migrations/20260318135219_InitialCreate.cs\")",
+      "Bash(sed 's/namespace DJBrate\\\\.API\\\\.Migrations/namespace DJBrate.Infrastructure.Migrations/g; s/using DJBrate\\\\.API\\\\.Data/using DJBrate.Infrastructure.Data/g; s/DJBrate\\\\.API\\\\.Models\\\\./DJBrate.Domain.Entities./g' \"e:/DJ-Brate/DJBrate.API/Migrations/20260318135219_InitialCreate.Designer.cs\")",
+      "Bash(\"e:/DJ-Brate/DJBrate.Infrastructure/Migrations/20260318135219_InitialCreate.Designer.cs\")",
+      "Bash(sed 's/namespace DJBrate\\\\.API\\\\.Migrations/namespace DJBrate.Infrastructure.Migrations/g; s/using DJBrate\\\\.API\\\\.Data/using DJBrate.Infrastructure.Data/g; s/DJBrate\\\\.API\\\\.Models\\\\./DJBrate.Domain.Entities./g' \"e:/DJ-Brate/DJBrate.API/Migrations/AppDbContextModelSnapshot.cs\")",
+      "Bash(\"e:/DJ-Brate/DJBrate.Infrastructure/Migrations/AppDbContextModelSnapshot.cs\")",
+      "Bash(dotnet build:*)",
+      "Bash(xargs grep:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet ef:*)",
+      "Bash(dotnet tool:*)",
+      "Bash(\"/c/Users/leons/.dotnet/tools/dotnet-ef.exe\" migrations:*)",
+      "Bash(grep -l \"namespace DJBrate.Domain.Entities\" /e/DJ-Brate/DJBrate.Domain/Entities/*.cs)",
+      "Bash(ls -1 /e/DJ-Brate/*.csproj /e/DJ-Brate/*/*.csproj)"
+    ]
+  }
+}

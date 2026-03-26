@@ -1,0 +1,50 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+
+<nav class="sidebar">
+    <div class="sidebar-logo">
+        <span class="logo-icon">🎧</span>
+        <span class="logo-text">DJ Brate</span>
+    </div>
+
+    <ul class="nav-links">
+        <li>
+            <NavLink href="" Match="NavLinkMatch.All">
+                <span class="nav-icon">🏠</span> Home
+            </NavLink>
+        </li>
+        <li>
+            <NavLink href="playlists">
+                <span class="nav-icon">🎵</span> Playlists
+            </NavLink>
+        </li>
+        <li>
+            <NavLink href="stats">
+                <span class="nav-icon">📊</span> Statistics
+            </NavLink>
+        </li>
+        <AuthorizeView Roles="admin">
+            <li>
+                <NavLink href="admin">
+                    <span class="nav-icon">⚙️</span> Admin
+                </NavLink>
+            </li>
+        </AuthorizeView>
+    </ul>
+
+    <div class="sidebar-footer">
+        <AuthorizeView>
+            <Authorized>
+                <div class="user-info">
+                    <span class="user-name">@context.User.Identity?.Name</span>
+                    <a href="/logout" class="logout-link">Sign out</a>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <NavLink href="login">
+                    <span class="nav-icon">👤</span> Sign in
+                </NavLink>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</nav>

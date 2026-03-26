@@ -1,0 +1,27 @@
+@page "/"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>DJ Brate</PageTitle>
+
+<div class="hero">
+    <div class="hero-content">
+        <p class="hero-eyebrow">AI Playlist Generator</p>
+        <h1>What's your mood?</h1>
+        <p>Opiši kako se osjećaš i DJ Brate će ti napraviti savršenu playlist.</p>
+
+        <div class="mood-input">
+            <textarea @bind="moodText" placeholder="npr. opušteno veče, malo melankolično ali ugodna vibracija..." rows="3"></textarea>
+            <button class="btn-primary" @onclick="Generate">Generiraj playlist</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string moodText = "";
+
+    private void Generate()
+    {
+        // TODO: call mood service
+    }
+}

@@ -1,0 +1,146 @@
+@page "/login"
+@layout AuthLayout
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject IUserService UserService
+@inject NavigationManager Nav
+
+<PageTitle>DJ Brate — @(Mode == "register" ? "Register" : "Sign in")</PageTitle>
+
+<div class="auth-card">
+    <div class="auth-logo">
+        <span class="auth-logo-icon">🎧</span>
+        <span class="auth-logo-text">DJ Brate</span>
+    </div>
+
+    <div class="auth-tabs">
+        <a class="@(Mode != "register" ? "auth-tab active" : "auth-tab")" href="/login">Sign in</a>
+        <a class="@(Mode == "register" ? "auth-tab active" : "auth-tab")" href="/login?mode=register">Register</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="auth-error">@ErrorMessage</div>
+    }
+
+    @if (Mode == "register")
+    {
+        <form method="post" @formname="register" class="auth-form">
+            <AntiforgeryToken />
+            <div class="form-group">
+                <label>Display name</label>
+                <input name="RegisterData.Name" type="text" placeholder="Your name" value="@RegisterData?.Name" autocomplete="name" />
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input name="RegisterData.Email" type="email" placeholder="your@email.com" value="@RegisterData?.Email" autocomplete="email" />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input name="RegisterData.Password" type="password" placeholder="Create a password" autocomplete="new-password" />
+            </div>
+            <div class="form-group">
+                <label>Confirm password</label>
+                <input name="RegisterData.ConfirmPassword" type="password" placeholder="Repeat password" autocomplete="new-password" />
+            </div>
+            <button type="submit" class="btn-primary btn-full">Create account</button>
+        </form>
+    }
+    else
+    {
+        <form method="post" @formname="login" class="auth-form">
+            <AntiforgeryToken />
+            <div class="form-group">
+                <label>Email</label>
+                <input name="LoginData.Email" type="email" placeholder="your@email.com" value="@LoginData?.Email" autocomplete="email" />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input name="LoginData.Password" type="password" placeholder="••••••••" autocomplete="current-password" />
+            </div>
+            <button type="submit" class="btn-primary btn-full">Sign in</button>
+        </form>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Mode { get; set; }
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm(FormName = "login")]
+    public LoginModel? LoginData { get; set; }
+
+    [SupplyParameterFromForm(FormName = "register")]
+    public RegisterModel? RegisterData { get; set; }
+
+    public string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (LoginData is not null) await HandleLogin();
+        else if (RegisterData is not null) await HandleRegister();
+    }
+
+    private async Task HandleLogin()
+    {
+        var user = await UserService.AuthenticateAsync(LoginData!.Email, LoginData.Password);
+        if (user is null)
+        {
+            ErrorMessage = "Invalid email or password.";
+            return;
+        }
+
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(ClaimTypes.Name, user.DisplayName),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Role, user.Role)
+        };
+        var principal = new ClaimsPrincipal(
+            new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+        await HttpContext!.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        Nav.NavigateTo("/");
+    }
+
+    private async Task HandleRegister()
+    {
+        if (RegisterData!.Password != RegisterData.ConfirmPassword)
+        {
+            ErrorMessage = "Passwords don't match.";
+            Mode = "register";
+            return;
+        }
+
+        var (success, error) = await UserService.RegisterAsync(
+            RegisterData.Name, RegisterData.Email, RegisterData.Password);
+
+        if (!success)
+        {
+            ErrorMessage = error;
+            Mode = "register";
+            return;
+        }
+
+        LoginData = new LoginModel { Email = RegisterData.Email, Password = RegisterData.Password };
+        await HandleLogin();
+    }
+
+    public class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    public class RegisterModel
+    {
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

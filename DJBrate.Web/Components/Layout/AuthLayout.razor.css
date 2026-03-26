@@ -1,0 +1,9 @@
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #0d0d0d;
+    background-image: radial-gradient(ellipse at 60% 20%, rgba(29,185,84,0.06) 0%, transparent 60%),
+                      radial-gradient(ellipse at 20% 80%, rgba(168,85,247,0.05) 0%, transparent 60%);
+}

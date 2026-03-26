@@ -1,0 +1,30 @@
+@page "/admin"
+@attribute [Authorize(Roles = "admin")]
+@rendermode InteractiveServer
+
+<PageTitle>DJ Brate — Admin</PageTitle>
+
+<div class="admin-wrapper">
+    <div class="admin-header">
+        <h1>Admin Panel</h1>
+        <p>Manage users, playlists, and system settings.</p>
+    </div>
+
+    <div class="admin-cards">
+        <div class="admin-card">
+            <span class="admin-card-icon">👤</span>
+            <h3>Users</h3>
+            <p>Coming soon</p>
+        </div>
+        <div class="admin-card">
+            <span class="admin-card-icon">🎵</span>
+            <h3>Playlists</h3>
+            <p>Coming soon</p>
+        </div>
+        <div class="admin-card">
+            <span class="admin-card-icon">⚙️</span>
+            <h3>Settings</h3>
+            <p>Coming soon</p>
+        </div>
+    </div>
+</div>

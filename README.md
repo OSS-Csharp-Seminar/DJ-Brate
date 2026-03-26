@@ -49,15 +49,15 @@ The project integrates **Model Context Protocol (MCP)** to allow the AI model to
 
 | Layer | Technology |
 |---|---|
-| Frontend | Blazor WebAssembly (C#) |
-| Backend | ASP.NET Core Web API (.NET 8) |
+| Frontend | Blazor Server (C#) |
+| Backend | ASP.NET Core (.NET 10) |
 | Real-time | SignalR (live playlist updates) |
 | Database | PostgreSQL |
 | ORM | Entity Framework Core |
 | AI | Any AI API (OpenAI, Claude, Gemini, etc.) |
 | Music | Spotify Web API + Web Playback SDK |
 | MCP | Custom MCP Server (C#) exposing Spotify tools |
-| Auth | Spotify OAuth 2.0 + JWT |
+| Auth | Cookie Auth + Spotify OAuth 2.0 |
 | Containerization | Docker + Docker Compose |
 | Background Jobs | Hangfire (periodic stats refresh) |
 
