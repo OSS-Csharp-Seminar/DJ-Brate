@@ -1,12 +1,7 @@
 @page "/login"
 @layout AuthLayout
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Authentication
-@using Microsoft.AspNetCore.Authentication.Cookies
-@inject IUserService UserService
-@inject NavigationManager Nav
 
-<PageTitle>DJ Brate — @(Mode == "register" ? "Register" : "Sign in")</PageTitle>
+<PageTitle>DJ Brate — Sign in</PageTitle>
 
 <div class="auth-card">
     <div class="auth-logo">
@@ -14,133 +9,36 @@
         <span class="auth-logo-text">DJ Brate</span>
     </div>
 
-    <div class="auth-tabs">
-        <a class="@(Mode != "register" ? "auth-tab active" : "auth-tab")" href="/login">Sign in</a>
-        <a class="@(Mode == "register" ? "auth-tab active" : "auth-tab")" href="/login?mode=register">Register</a>
-    </div>
+    <p class="auth-subtitle">Connect your Spotify account to generate AI-powered playlists tailored to your taste.</p>
 
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
         <div class="auth-error">@ErrorMessage</div>
     }
 
-    @if (Mode == "register")
-    {
-        <form method="post" @formname="register" class="auth-form">
-            <AntiforgeryToken />
-            <div class="form-group">
-                <label>Display name</label>
-                <input name="RegisterData.Name" type="text" placeholder="Your name" value="@RegisterData?.Name" autocomplete="name" />
-            </div>
-            <div class="form-group">
-                <label>Email</label>
-                <input name="RegisterData.Email" type="email" placeholder="your@email.com" value="@RegisterData?.Email" autocomplete="email" />
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input name="RegisterData.Password" type="password" placeholder="Create a password" autocomplete="new-password" />
-            </div>
-            <div class="form-group">
-                <label>Confirm password</label>
-                <input name="RegisterData.ConfirmPassword" type="password" placeholder="Repeat password" autocomplete="new-password" />
-            </div>
-            <button type="submit" class="btn-primary btn-full">Create account</button>
-        </form>
-    }
-    else
-    {
-        <form method="post" @formname="login" class="auth-form">
-            <AntiforgeryToken />
-            <div class="form-group">
-                <label>Email</label>
-                <input name="LoginData.Email" type="email" placeholder="your@email.com" value="@LoginData?.Email" autocomplete="email" />
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input name="LoginData.Password" type="password" placeholder="••••••••" autocomplete="current-password" />
-            </div>
-            <button type="submit" class="btn-primary btn-full">Sign in</button>
-        </form>
-    }
+    <a href="/auth/spotify/login" class="btn-spotify btn-full">
+        <svg class="spotify-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+        </svg>
+        Continue with Spotify
+    </a>
 </div>
 
 @code {
     [SupplyParameterFromQuery]
-    public string? Mode { get; set; }
-
-    [CascadingParameter]
-    public HttpContext? HttpContext { get; set; }
-
-    [SupplyParameterFromForm(FormName = "login")]
-    public LoginModel? LoginData { get; set; }
-
-    [SupplyParameterFromForm(FormName = "register")]
-    public RegisterModel? RegisterData { get; set; }
+    public string? SpotifyError { get; set; }
 
     public string? ErrorMessage { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        if (LoginData is not null) await HandleLogin();
-        else if (RegisterData is not null) await HandleRegister();
-    }
-
-    private async Task HandleLogin()
-    {
-        var user = await UserService.AuthenticateAsync(LoginData!.Email, LoginData.Password);
-        if (user is null)
-        {
-            ErrorMessage = "Invalid email or password.";
-            return;
-        }
-
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.DisplayName),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role)
-        };
-        var principal = new ClaimsPrincipal(
-            new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
-        await HttpContext!.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-        Nav.NavigateTo("/");
-    }
-
-    private async Task HandleRegister()
-    {
-        if (RegisterData!.Password != RegisterData.ConfirmPassword)
-        {
-            ErrorMessage = "Passwords don't match.";
-            Mode = "register";
-            return;
-        }
-
-        var (success, error) = await UserService.RegisterAsync(
-            RegisterData.Name, RegisterData.Email, RegisterData.Password);
-
-        if (!success)
-        {
-            ErrorMessage = error;
-            Mode = "register";
-            return;
-        }
-
-        LoginData = new LoginModel { Email = RegisterData.Email, Password = RegisterData.Password };
-        await HandleLogin();
-    }
-
-    public class LoginModel
-    {
-        public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
-    }
-
-    public class RegisterModel
-    {
-        public string Name { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string Password { get; set; } = "";
-        public string ConfirmPassword { get; set; } = "";
+        if (!string.IsNullOrEmpty(SpotifyError))
+            ErrorMessage = SpotifyError switch
+            {
+                "access_denied"  => "Spotify login was cancelled.",
+                "invalid_state"  => "Login session expired. Please try again.",
+                "profile_failed" => "Could not retrieve your Spotify profile. Please try again.",
+                _                => "Spotify login failed. Please try again."
+            };
     }
 }

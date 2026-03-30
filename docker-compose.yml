@@ -31,6 +31,9 @@ services:
       TZ: Europe/Zagreb
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=dj_brate;Username=djuser;Password=dj"
+      Spotify__ClientId: ${SPOTIFY_CLIENT_ID}
+      Spotify__ClientSecret: ${SPOTIFY_CLIENT_SECRET}
+      Spotify__RedirectUri: ${SPOTIFY_REDIRECT_URI}
  
   pgadmin:
     image: dpage/pgadmin4

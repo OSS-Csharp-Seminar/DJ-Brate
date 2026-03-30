@@ -27,37 +27,11 @@
     color: #ffffff;
 }
 
-.auth-tabs {
-    display: flex;
-    background-color: #0d0d0d;
-    border-radius: 8px;
-    padding: 4px;
-    gap: 4px;
-}
-
-.auth-tab {
-    flex: 1;
-    display: block;
+.auth-subtitle {
     text-align: center;
-    background: transparent;
-    border: none;
-    color: #666;
+    color: #888;
     font-size: 0.875rem;
-    font-weight: 500;
-    padding: 0.5rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.15s, color 0.15s;
-    text-decoration: none;
-}
-
-.auth-tab.active {
-    background-color: #1f1f1f;
-    color: #ffffff;
-}
-
-.auth-tab:hover:not(.active) {
-    color: #aaa;
+    line-height: 1.5;
 }
 
 .auth-error {
@@ -67,49 +41,36 @@
     color: #ff6b6b;
     font-size: 0.85rem;
     padding: 0.65rem 0.9rem;
-    margin: -0.5rem 0;
 }
 
-.auth-form {
+.btn-spotify {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.form-group label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #888;
-    letter-spacing: 0.03em;
-}
-
-.form-group input {
-    background-color: #0d0d0d;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    color: #e0e0e0;
-    font-size: 0.9rem;
-    padding: 0.7rem 0.9rem;
-    outline: none;
-    transition: border-color 0.2s;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
     width: 100%;
-    font-family: inherit;
+    padding: 0.75rem;
+    background-color: #1db954;
+    color: #000;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.1s;
+    letter-spacing: 0.02em;
 }
 
-.form-group input:focus {
-    border-color: #1db954;
+.btn-spotify:hover {
+    background-color: #1ed760;
+    color: #000;
 }
 
-.form-group input::placeholder {
-    color: #444;
+.btn-spotify:active {
+    transform: scale(0.97);
 }
 
-.auth-form .btn-primary.btn-full {
-    margin-top: 0.5rem;
+.spotify-icon {
+    flex-shrink: 0;
 }
