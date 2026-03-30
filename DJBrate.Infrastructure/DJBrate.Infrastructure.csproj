@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DJBrate.Domain\DJBrate.Domain.csproj" />
+    <ProjectReference Include="..\DJBrate.Application\DJBrate.Application.csproj" />
   </ItemGroup>
 
 </Project>

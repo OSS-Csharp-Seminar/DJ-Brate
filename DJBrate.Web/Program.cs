@@ -8,6 +8,7 @@ using DJBrate.Domain.Entities;
 using DJBrate.Domain.Interfaces;
 using DJBrate.Infrastructure.Data;
 using DJBrate.Infrastructure.Repositories;
+using DJBrate.Infrastructure.Spotify;
 using DJBrate.Web.Components;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -36,11 +37,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMoodSessionRepository, MoodSessionRepository>();
 builder.Services.AddScoped<IPlaylistRepository, PlaylistRepository>();
+builder.Services.AddScoped<IUserTopTrackRepository, UserTopTrackRepository>();
+builder.Services.AddScoped<IUserTopArtistRepository, UserTopArtistRepository>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMoodSessionService, MoodSessionService>();
 builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 builder.Services.AddScoped<ISpotifyTokenService, SpotifyTokenService>();
+builder.Services.AddScoped<ISpotifyDataSyncService, SpotifyDataSyncService>();
+
+builder.Services.AddHttpClient<ISpotifyApiClient, SpotifyApiClient>(client =>
+{
+    client.BaseAddress = new Uri("https://api.spotify.com/v1/");
+});
 
 var app = builder.Build();
 
@@ -87,7 +96,7 @@ app.MapGet("/auth/spotify/login", (HttpContext ctx, IConfiguration config) =>
     return Results.Redirect(url);
 });
 
-app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration config, IUserService userService) =>
+app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration config, IUserService userService, ISpotifyDataSyncService syncService) =>
 {
     var code  = ctx.Request.Query["code"].ToString();
     var state = ctx.Request.Query["state"].ToString();
@@ -134,7 +143,10 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
     var profileResponse = await profileHttp.GetAsync("https://api.spotify.com/v1/me");
 
     if (!profileResponse.IsSuccessStatusCode)
-        return Results.Redirect("/login?spotifyError=profile_failed");
+    {
+        var errBody = await profileResponse.Content.ReadAsStringAsync();
+        return Results.Redirect($"/login?spotifyError={Uri.EscapeDataString((int)profileResponse.StatusCode + ": " + errBody)}");
+    }
 
     using var profileDoc = await JsonDocument.ParseAsync(await profileResponse.Content.ReadAsStreamAsync());
     var profile = profileDoc.RootElement;
@@ -172,6 +184,9 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
     var principal = new ClaimsPrincipal(
         new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+    if (!user.LastLoginAt.HasValue || user.LastLoginAt < DateTime.UtcNow.AddHours(-24))
+        await syncService.SyncUserTopDataAsync(user.Id);
 
     return Results.Redirect("/");
 });

@@ -33,12 +33,6 @@
     protected override void OnInitialized()
     {
         if (!string.IsNullOrEmpty(SpotifyError))
-            ErrorMessage = SpotifyError switch
-            {
-                "access_denied"  => "Spotify login was cancelled.",
-                "invalid_state"  => "Login session expired. Please try again.",
-                "profile_failed" => "Could not retrieve your Spotify profile. Please try again.",
-                _                => "Spotify login failed. Please try again."
-            };
+            ErrorMessage = SpotifyError;
     }
 }
