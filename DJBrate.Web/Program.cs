@@ -162,6 +162,11 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
     if (profile.TryGetProperty("images", out var images) && images.GetArrayLength() > 0)
         avatarUrl = images[0].GetProperty("url").GetString();
 
+    var existingUser = await userService.GetUserBySpotifyIdAsync(spotifyId);
+    var needsSync = existingUser is null
+        || !existingUser.LastLoginAt.HasValue
+        || existingUser.LastLoginAt < DateTime.UtcNow.AddHours(-24);
+
     var user = await userService.CreateOrUpdateUserAsync(new User
     {
         SpotifyId           = spotifyId,
@@ -185,7 +190,7 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
         new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-    if (!user.LastLoginAt.HasValue || user.LastLoginAt < DateTime.UtcNow.AddHours(-24))
+    if (needsSync)
         await syncService.SyncUserTopDataAsync(user.Id);
 
     return Results.Redirect("/");
