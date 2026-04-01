@@ -1,4 +1,5 @@
 using DJBrate.Application.Interfaces;
+using DJBrate.Application.Models.Spotify;
 using DJBrate.Domain.Entities;
 using DJBrate.Domain.Interfaces;
 
@@ -6,13 +7,14 @@ namespace DJBrate.Application.Services;
 
 public class SpotifyDataSyncService : ISpotifyDataSyncService
 {
-    private static readonly string[] TimeRanges = ["short_term", "medium_term", "long_term"];
+    private static readonly SpotifyTimeRange[] TimeRanges =
+        [SpotifyTimeRange.ShortTerm, SpotifyTimeRange.MediumTerm, SpotifyTimeRange.LongTerm];
 
-    private readonly IUserRepository _userRepository;
-    private readonly IUserTopTrackRepository _topTrackRepository;
-    private readonly IUserTopArtistRepository _topArtistRepository;
-    private readonly ISpotifyApiClient _spotifyApiClient;
-    private readonly ISpotifyTokenService _tokenService;
+    private readonly IUserRepository           _userRepository;
+    private readonly IUserTopTrackRepository   _topTrackRepository;
+    private readonly IUserTopArtistRepository  _topArtistRepository;
+    private readonly ISpotifyApiClient         _spotifyApiClient;
+    private readonly ISpotifyTokenService      _tokenService;
 
     public SpotifyDataSyncService(
         IUserRepository userRepository,
@@ -37,10 +39,11 @@ public class SpotifyDataSyncService : ISpotifyDataSyncService
 
         foreach (var timeRange in TimeRanges)
         {
+            var timeRangeStr = timeRange.ToApiString();
             var tracks  = await _spotifyApiClient.GetTopTracksAsync(accessToken, timeRange);
             var artists = await _spotifyApiClient.GetTopArtistsAsync(accessToken, timeRange);
 
-            await _topTrackRepository.DeleteByUserAndTimeRangeAsync(userId, timeRange);
+            await _topTrackRepository.DeleteByUserAndTimeRangeAsync(userId, timeRangeStr);
             for (var i = 0; i < tracks.Count; i++)
             {
                 var t = tracks[i];
@@ -51,13 +54,13 @@ public class SpotifyDataSyncService : ISpotifyDataSyncService
                     TrackName       = t.Name,
                     SpotifyArtistId = t.Artists.FirstOrDefault()?.Id ?? "",
                     ArtistName      = t.Artists.FirstOrDefault()?.Name ?? "",
-                    TimeRange       = timeRange,
+                    TimeRange       = timeRangeStr,
                     RankPosition    = i + 1,
                     SyncedAt        = DateTime.UtcNow
                 });
             }
 
-            await _topArtistRepository.DeleteByUserAndTimeRangeAsync(userId, timeRange);
+            await _topArtistRepository.DeleteByUserAndTimeRangeAsync(userId, timeRangeStr);
             for (var i = 0; i < artists.Count; i++)
             {
                 var a = artists[i];
@@ -67,7 +70,7 @@ public class SpotifyDataSyncService : ISpotifyDataSyncService
                     SpotifyArtistId = a.Id,
                     ArtistName      = a.Name,
                     Genres          = a.Genres.ToArray(),
-                    TimeRange       = timeRange,
+                    TimeRange       = timeRangeStr,
                     RankPosition    = i + 1,
                     SyncedAt        = DateTime.UtcNow
                 });

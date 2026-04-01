@@ -1,8 +1,5 @@
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Globalization;
+using SpotifyAPI.Web;
 using DJBrate.Application.Interfaces;
 using DJBrate.Application.Models.Spotify;
 
@@ -10,44 +7,32 @@ namespace DJBrate.Infrastructure.Spotify;
 
 public class SpotifyApiClient : ISpotifyApiClient
 {
-    private readonly HttpClient _http;
+    private const int TopItemsLimit        = 50;
+    private const int RecommendationsLimit = 30;
+    private const int MaxSeedArtists       = 3;
+    private const int MaxSeedTracks        = 2;
+    private const int PlaylistBatchSize    = 100;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
+    private static SpotifyClient Client(string accessToken) => new(accessToken);
 
-    public SpotifyApiClient(HttpClient http)
+    public async Task<List<SpotifyTrack>> GetTopTracksAsync(string accessToken, SpotifyTimeRange timeRange)
     {
-        _http = http;
+        var result = await Client(accessToken).Personalization.GetTopTracks(new PersonalizationTopRequest
+        {
+            TimeRangeParam = ToLibraryTimeRange(timeRange),
+            Limit = TopItemsLimit
+        });
+        return result.Items?.Select(MapFullTrack).ToList() ?? [];
     }
 
-    public async Task<List<SpotifyTrack>> GetTopTracksAsync(string accessToken, string timeRange)
+    public async Task<List<SpotifyArtist>> GetTopArtistsAsync(string accessToken, SpotifyTimeRange timeRange)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get,
-            $"me/top/tracks?time_range={timeRange}&limit=50");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var response = await _http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-        return doc.RootElement.GetProperty("items")
-                  .Deserialize<List<SpotifyTrack>>(JsonOptions) ?? [];
-    }
-
-    public async Task<List<SpotifyArtist>> GetTopArtistsAsync(string accessToken, string timeRange)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Get,
-            $"me/top/artists?time_range={timeRange}&limit=50");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var response = await _http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-        return doc.RootElement.GetProperty("items")
-                  .Deserialize<List<SpotifyArtist>>(JsonOptions) ?? [];
+        var result = await Client(accessToken).Personalization.GetTopArtists(new PersonalizationTopRequest
+        {
+            TimeRangeParam = ToLibraryTimeRange(timeRange),
+            Limit = TopItemsLimit
+        });
+        return result.Items?.Select(MapFullArtist).ToList() ?? [];
     }
 
     public async Task<List<SpotifyTrack>> GetRecommendationsAsync(
@@ -56,56 +41,67 @@ public class SpotifyApiClient : ISpotifyApiClient
         List<string> seedTrackIds,
         AudioFeatureTargets features)
     {
-        var query = new StringBuilder("recommendations?limit=30");
+        var req = new RecommendationsRequest { Limit = RecommendationsLimit };
 
-        if (seedArtistIds.Count > 0)
-            query.Append($"&seed_artists={string.Join(",", seedArtistIds.Take(3))}");
-        if (seedTrackIds.Count > 0)
-            query.Append($"&seed_tracks={string.Join(",", seedTrackIds.Take(2))}");
+        foreach (var id in seedArtistIds.Take(MaxSeedArtists)) req.SeedArtists.Add(id);
+        foreach (var id in seedTrackIds.Take(MaxSeedTracks))   req.SeedTracks.Add(id);
 
-        if (features.Valence.HasValue)    query.Append($"&target_valence={features.Valence:F2}");
-        if (features.Energy.HasValue)     query.Append($"&target_energy={features.Energy:F2}");
-        if (features.Tempo.HasValue)      query.Append($"&target_tempo={features.Tempo:F0}");
-        if (features.Danceability.HasValue) query.Append($"&target_danceability={features.Danceability:F2}");
-        if (features.Acousticness.HasValue) query.Append($"&target_acousticness={features.Acousticness:F2}");
+        SetTarget(req, "valence",      features.Valence,      "F2");
+        SetTarget(req, "energy",       features.Energy,       "F2");
+        SetTarget(req, "tempo",        features.Tempo,        "F0");
+        SetTarget(req, "danceability", features.Danceability, "F2");
+        SetTarget(req, "acousticness", features.Acousticness, "F2");
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, query.ToString());
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        var response = await _http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-        return doc.RootElement.GetProperty("tracks")
-                  .Deserialize<List<SpotifyTrack>>(JsonOptions) ?? [];
+        var result = await Client(accessToken).Browse.GetRecommendations(req);
+        return result.Tracks.Select(MapFullTrack).ToList();
     }
 
     public async Task<string> CreatePlaylistAsync(
         string accessToken, string spotifyUserId, string name, string description)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post,
-            $"users/{spotifyUserId}/playlists");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Content = JsonContent.Create(new { name, description, @public = false });
+        var playlist = await Client(accessToken).Playlists.Create(
+            new PlaylistCreateRequest(name) { Description = description, Public = false });
 
-        var response = await _http.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-        return doc.RootElement.GetProperty("id").GetString()!;
+        return playlist.Id!;
     }
 
     public async Task AddTracksToPlaylistAsync(string accessToken, string playlistId, List<string> trackUris)
     {
-        foreach (var batch in trackUris.Chunk(100))
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Post,
-                $"playlists/{playlistId}/tracks");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            request.Content = JsonContent.Create(new { uris = batch });
-
-            var response = await _http.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-        }
+        foreach (var batch in trackUris.Chunk(PlaylistBatchSize))
+            await Client(accessToken).Playlists.AddPlaylistItems(
+                playlistId,
+                new PlaylistAddItemsRequest(batch.ToList()));
     }
+
+    private static void SetTarget(RecommendationsRequest req, string key, float? value, string format)
+    {
+        if (value.HasValue)
+            req.Target[key] = value.Value.ToString(format, CultureInfo.InvariantCulture);
+    }
+
+    private static PersonalizationTopRequest.TimeRange ToLibraryTimeRange(SpotifyTimeRange timeRange) =>
+        timeRange switch
+        {
+            SpotifyTimeRange.ShortTerm => PersonalizationTopRequest.TimeRange.ShortTerm,
+            SpotifyTimeRange.LongTerm  => PersonalizationTopRequest.TimeRange.LongTerm,
+            _                          => PersonalizationTopRequest.TimeRange.MediumTerm
+        };
+
+    private static SpotifyTrack MapFullTrack(FullTrack t) => new()
+    {
+        Id         = t.Id,
+        Name       = t.Name,
+        Uri        = t.Uri,
+        DurationMs = t.DurationMs,
+        PreviewUrl = t.PreviewUrl,
+        Artists    = t.Artists.Select(a => new SpotifyArtistRef { Id = a.Id, Name = a.Name }).ToList(),
+        Album      = new SpotifyAlbum { Name = t.Album.Name }
+    };
+
+    private static SpotifyArtist MapFullArtist(FullArtist a) => new()
+    {
+        Id     = a.Id,
+        Name   = a.Name,
+        Genres = a.Genres ?? []
+    };
 }

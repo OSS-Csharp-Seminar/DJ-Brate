@@ -1,8 +1,9 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 using DJBrate.Application.Interfaces;
+using DJBrate.Application.Models.Spotify;
 using DJBrate.Application.Services;
 using DJBrate.Domain.Entities;
 using DJBrate.Domain.Interfaces;
@@ -22,9 +23,9 @@ builder.Services.AddRazorComponents()
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.LoginPath = "/login";
+        options.LoginPath        = "/login";
         options.AccessDeniedPath = "/login";
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.ExpireTimeSpan   = TimeSpan.FromDays(SpotifyConstants.CookieExpiryDays);
         options.SlidingExpiration = true;
     });
 
@@ -46,10 +47,7 @@ builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 builder.Services.AddScoped<ISpotifyTokenService, SpotifyTokenService>();
 builder.Services.AddScoped<ISpotifyDataSyncService, SpotifyDataSyncService>();
 
-builder.Services.AddHttpClient<ISpotifyApiClient, SpotifyApiClient>(client =>
-{
-    client.BaseAddress = new Uri("https://api.spotify.com/v1/");
-});
+builder.Services.AddScoped<ISpotifyApiClient, SpotifyApiClient>();
 
 var app = builder.Build();
 
@@ -73,20 +71,18 @@ app.UseAntiforgery();
 app.MapGet("/auth/spotify/login", (HttpContext ctx, IConfiguration config) =>
 {
     var state = Guid.NewGuid().ToString("N");
-    ctx.Response.Cookies.Append("spotify_oauth_state", state, new CookieOptions
+    ctx.Response.Cookies.Append(SpotifyConstants.OAuthStateCookie, state, new CookieOptions
     {
         HttpOnly = true,
         SameSite = SameSiteMode.Lax,
-        MaxAge = TimeSpan.FromMinutes(10)
+        MaxAge   = TimeSpan.FromMinutes(SpotifyConstants.OAuthStateCookieMaxAgeMinutes)
     });
 
     var clientId    = config["Spotify:ClientId"];
     var redirectUri = Uri.EscapeDataString(config["Spotify:RedirectUri"]!);
-    var scopes      = Uri.EscapeDataString(
-        "user-read-private user-read-email user-top-read " +
-        "playlist-modify-public playlist-modify-private");
+    var scopes      = Uri.EscapeDataString(SpotifyConstants.Scopes);
 
-    var url = $"https://accounts.spotify.com/authorize" +
+    var url = $"{SpotifyConstants.AuthorizeUrl}" +
               $"?client_id={clientId}" +
               $"&response_type=code" +
               $"&redirect_uri={redirectUri}" +
@@ -105,23 +101,22 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
     if (!string.IsNullOrEmpty(error))
         return Results.Redirect("/login?spotifyError=access_denied");
 
-    var savedState = ctx.Request.Cookies["spotify_oauth_state"];
+    var savedState = ctx.Request.Cookies[SpotifyConstants.OAuthStateCookie];
     if (string.IsNullOrEmpty(savedState) || savedState != state)
         return Results.Redirect("/login?spotifyError=invalid_state");
 
-    ctx.Response.Cookies.Delete("spotify_oauth_state");
+    ctx.Response.Cookies.Delete(SpotifyConstants.OAuthStateCookie);
 
     var clientId     = config["Spotify:ClientId"]!;
     var clientSecret = config["Spotify:ClientSecret"]!;
     var redirectUri  = config["Spotify:RedirectUri"]!;
     var credentials  = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
 
-    string accessToken, refreshToken;
-    int expiresIn;
+    SpotifyTokenResponse token;
     using (var tokenHttp = new HttpClient())
     {
         tokenHttp.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-        var tokenResponse = await tokenHttp.PostAsync("https://accounts.spotify.com/api/token",
+        var tokenResponse = await tokenHttp.PostAsync(SpotifyConstants.TokenUrl,
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"]   = "authorization_code",
@@ -132,15 +127,12 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
         if (!tokenResponse.IsSuccessStatusCode)
             return Results.Redirect($"/login?spotifyError=token_failed_{(int)tokenResponse.StatusCode}");
 
-        using var tokenDoc = await JsonDocument.ParseAsync(await tokenResponse.Content.ReadAsStreamAsync());
-        accessToken  = tokenDoc.RootElement.GetProperty("access_token").GetString()!;
-        refreshToken = tokenDoc.RootElement.GetProperty("refresh_token").GetString()!;
-        expiresIn    = tokenDoc.RootElement.GetProperty("expires_in").GetInt32();
+        token = (await tokenResponse.Content.ReadFromJsonAsync<SpotifyTokenResponse>())!;
     }
 
     using var profileHttp = new HttpClient();
-    profileHttp.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-    var profileResponse = await profileHttp.GetAsync("https://api.spotify.com/v1/me");
+    profileHttp.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+    var profileResponse = await profileHttp.GetAsync(SpotifyConstants.ProfileUrl);
 
     if (!profileResponse.IsSuccessStatusCode)
     {
@@ -148,24 +140,16 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
         return Results.Redirect($"/login?spotifyError={Uri.EscapeDataString((int)profileResponse.StatusCode + ": " + errBody)}");
     }
 
-    using var profileDoc = await JsonDocument.ParseAsync(await profileResponse.Content.ReadAsStreamAsync());
-    var profile = profileDoc.RootElement;
-
-    var spotifyId   = profile.GetProperty("id").GetString()!;
-    var displayName = profile.TryGetProperty("display_name", out var dn) && dn.ValueKind != JsonValueKind.Null
-        ? dn.GetString() ?? spotifyId
-        : spotifyId;
-    var email = profile.TryGetProperty("email", out var em) && em.ValueKind != JsonValueKind.Null
-        ? em.GetString() ?? $"{spotifyId}@spotify.placeholder"
-        : $"{spotifyId}@spotify.placeholder";
-    string? avatarUrl = null;
-    if (profile.TryGetProperty("images", out var images) && images.GetArrayLength() > 0)
-        avatarUrl = images[0].GetProperty("url").GetString();
+    var profile     = (await profileResponse.Content.ReadFromJsonAsync<SpotifyProfileResponse>())!;
+    var spotifyId   = profile.Id;
+    var displayName = profile.DisplayName ?? spotifyId;
+    var email       = profile.Email ?? $"{spotifyId}{SpotifyConstants.PlaceholderEmailSuffix}";
+    var avatarUrl   = profile.Images.FirstOrDefault()?.Url;
 
     var existingUser = await userService.GetUserBySpotifyIdAsync(spotifyId);
     var needsSync = existingUser is null
         || !existingUser.LastLoginAt.HasValue
-        || existingUser.LastLoginAt < DateTime.UtcNow.AddHours(-24);
+        || existingUser.LastLoginAt < DateTime.UtcNow.AddHours(-SpotifyConstants.SyncIntervalHours);
 
     var user = await userService.CreateOrUpdateUserAsync(new User
     {
@@ -173,10 +157,10 @@ app.MapGet("/auth/spotify/callback", async (HttpContext ctx, IConfiguration conf
         DisplayName         = displayName,
         Email               = email,
         AvatarUrl           = avatarUrl,
-        SpotifyAccessToken  = accessToken,
-        SpotifyRefreshToken = refreshToken,
-        TokenExpiresAt      = DateTime.UtcNow.AddSeconds(expiresIn),
-        Role                = "user"
+        SpotifyAccessToken  = token.AccessToken,
+        SpotifyRefreshToken = token.RefreshToken,
+        TokenExpiresAt      = DateTime.UtcNow.AddSeconds(token.ExpiresIn),
+        Role                = SpotifyConstants.DefaultUserRole
     });
 
     var claims = new List<Claim>
