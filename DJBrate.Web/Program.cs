@@ -6,6 +6,8 @@ using DJBrate.Domain.Interfaces;
 using DJBrate.Infrastructure.Data;
 using DJBrate.Infrastructure.Repositories;
 using DJBrate.Infrastructure.Spotify;
+using DJBrate.Infrastructure.Ai;
+using DJBrate.Application.Mcp;
 using DJBrate.Web.Components;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -39,6 +41,10 @@ builder.Services.AddScoped<IMoodSessionRepository, MoodSessionRepository>();
 builder.Services.AddScoped<IPlaylistRepository, PlaylistRepository>();
 builder.Services.AddScoped<IUserTopTrackRepository, UserTopTrackRepository>();
 builder.Services.AddScoped<IUserTopArtistRepository, UserTopArtistRepository>();
+builder.Services.AddScoped<IAiModelConfigRepository, AiModelConfigRepository>();
+builder.Services.AddScoped<IMcpToolCallRepository, McpToolCallRepository>();
+builder.Services.AddScoped<IAiMoodMappingRepository, AiMoodMappingRepository>();
+builder.Services.AddScoped<IAiConversationMessageRepository, AiConversationMessageRepository>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMoodSessionService, MoodSessionService>();
@@ -46,6 +52,9 @@ builder.Services.AddScoped<IPlaylistService, PlaylistService>();
 builder.Services.AddScoped<ISpotifyTokenService, SpotifyTokenService>();
 builder.Services.AddScoped<ISpotifyDataSyncService, SpotifyDataSyncService>();
 builder.Services.AddScoped<ISpotifyApiClient, SpotifyApiClient>();
+builder.Services.AddScoped<IAiClient, GeminiClient>();
+builder.Services.AddScoped<IAiMoodService, AiMoodService>();
+builder.Services.AddScoped<McpDispatcher>();
 
 var app = builder.Build();
 
@@ -53,6 +62,52 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    if (!db.AiModelConfigs.Any())
+    {
+        db.AiModelConfigs.Add(new AiModelConfig
+        {
+            ConfigName   = "default",
+            ModelName    = "gemini-2.5-flash",
+            Temperature  = 0.8f,
+            MaxTokens    = 2048,
+            IsActive     = true,
+            SystemPrompt = """
+                You are DJ Brate, an AI DJ that creates personalized Spotify playlists based on the user's mood.
+
+                Your job:
+                1. Read the user's mood prompt carefully
+                2. Use the available tools to understand their music taste (call get_user_top_tracks and/or get_user_top_artists)
+                3. Based on their taste + mood, call get_recommendations with appropriate seed artists/tracks and audio feature targets
+                4. After getting recommendations, respond with a final JSON result
+
+                Audio feature guidelines:
+                - valence: 0.0 = sad/angry, 1.0 = happy/cheerful
+                - energy: 0.0 = calm/relaxed, 1.0 = intense/energetic
+                - tempo: 60-80 = slow, 100-120 = moderate, 130-160 = fast
+                - danceability: 0.0 = not danceable, 1.0 = very danceable
+                - acousticness: 0.0 = electronic/produced, 1.0 = acoustic/unplugged
+
+                When you have the final track list, respond with ONLY this JSON (no markdown, no extra text):
+                {
+                    "playlist_name": "a creative playlist name based on the mood",
+                    "playlist_description": "a short description of the playlist vibe",
+                    "detected_mood": "the mood you detected",
+                    "reasoning": "brief explanation of your choices",
+                    "audio_features": {
+                        "valence": 0.0-1.0,
+                        "energy": 0.0-1.0,
+                        "tempo": 60-180,
+                        "danceability": 0.0-1.0,
+                        "acousticness": 0.0-1.0
+                    }
+                }
+
+                Important: You MUST call at least get_user_top_artists or get_user_top_tracks first, then call get_recommendations. Do not skip tool calls.
+                """
+        });
+        db.SaveChanges();
+    }
 }
 
 if (!app.Environment.IsDevelopment())
