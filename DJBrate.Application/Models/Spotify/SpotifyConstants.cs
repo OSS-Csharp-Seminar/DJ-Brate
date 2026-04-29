@@ -9,7 +9,8 @@ public static class SpotifyConstants
     public const string Scopes =
         "user-read-private user-read-email user-top-read " +
         "playlist-modify-public playlist-modify-private " +
-        "ugc-image-upload";
+        "ugc-image-upload " +
+        "streaming user-read-playback-state user-modify-playback-state";
 
     public const string DefaultUserRole  = "user";
     public const string PlaceholderEmailSuffix = "@spotify.placeholder";

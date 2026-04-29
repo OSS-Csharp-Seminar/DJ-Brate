@@ -1,9 +1,16 @@
 @implements IAsyncDisposable
 @using DJBrate.Web.Services
+@using DJBrate.Application.Interfaces
+@using DJBrate.Domain.Interfaces
 @using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @inject PlaybackState State
 @inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IUserRepository UserRepository
+@inject ISpotifyTokenService TokenService
 
 <div class="player-bar @(State.PlayingTrackId is null ? "player-bar-hidden" : "")">
     <div class="player-bar-inner">
@@ -104,7 +111,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
-        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/preview-watcher.js");
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/spotify-player.js");
         _selfRef = DotNetObjectReference.Create(this);
         await _module.InvokeVoidAsync("init", _selfRef);
 
@@ -122,6 +129,17 @@
 
     [JSInvokable]
     public Task OnPreviewEnded() => State.HandleTrackEndedAsync();
+
+    [JSInvokable]
+    public async Task<string> GetAccessToken()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idClaim, out var userId)) return string.Empty;
+        var user = await UserRepository.GetByIdAsync(userId);
+        if (user is null) return string.Empty;
+        return await TokenService.EnsureValidTokenAsync(user);
+    }
 
     private async Task OnSeek(ChangeEventArgs e)
     {
