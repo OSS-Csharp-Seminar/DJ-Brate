@@ -34,12 +34,22 @@ public class MoodSession
     public float? Danceability { get; set; }
 
     [Required]
+    [Column("session_type")]
+    public string SessionType { get; set; } = MoodSessionTypes.Create;
+
+    [Column("refines_playlist_id")]
+    public Guid? RefinesPlaylistId { get; set; }
+
+    [Required]
     [Column("status")]
     public string Status { get; set; } = MoodSessionStatuses.Creating;
 
     [Required]
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [Column("completed_at")]
+    public DateTime? CompletedAt { get; set; }
 
     public User User { get; set; } = null!;
     public AiModelConfig AiConfig { get; set; } = null!;

@@ -19,4 +19,50 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
         => await _dbSet
             .Include(p => p.PlaylistTracks)
             .FirstOrDefaultAsync(p => p.Id == id);
+
+    public async Task RemoveTracksAsync(Guid playlistId, List<string> spotifyTrackIds)
+    {
+        var tracks = await _context.Set<PlaylistTrack>()
+            .Where(t => t.PlaylistId == playlistId && spotifyTrackIds.Contains(t.SpotifyTrackId))
+            .ToListAsync();
+        _context.Set<PlaylistTrack>().RemoveRange(tracks);
+
+        var playlist = await _dbSet.FindAsync(playlistId);
+        if (playlist is not null)
+            playlist.TrackCount = await _context.Set<PlaylistTrack>()
+                .CountAsync(t => t.PlaylistId == playlistId) - tracks.Count;
+
+        await _context.SaveChangesAsync();
+
+        // reorder positions
+        var remaining = await _context.Set<PlaylistTrack>()
+            .Where(t => t.PlaylistId == playlistId)
+            .OrderBy(t => t.Position)
+            .ToListAsync();
+        for (var i = 0; i < remaining.Count; i++)
+            remaining[i].Position = i + 1;
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task AddTracksAsync(Guid playlistId, List<PlaylistTrack> tracks)
+    {
+        var maxPosition = await _context.Set<PlaylistTrack>()
+            .Where(t => t.PlaylistId == playlistId)
+            .Select(t => (int?)t.Position)
+            .MaxAsync() ?? 0;
+
+        for (var i = 0; i < tracks.Count; i++)
+        {
+            tracks[i].PlaylistId = playlistId;
+            tracks[i].Position   = maxPosition + i + 1;
+        }
+
+        await _context.Set<PlaylistTrack>().AddRangeAsync(tracks);
+
+        var playlist = await _dbSet.FindAsync(playlistId);
+        if (playlist is not null)
+            playlist.TrackCount += tracks.Count;
+
+        await _context.SaveChangesAsync();
+    }
 }

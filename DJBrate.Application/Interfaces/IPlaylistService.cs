@@ -10,4 +10,5 @@ public interface IPlaylistService
     Task<bool> UpdateCoverImageAsync(Guid playlistId, Guid userId, string imageUrl);
     Task SyncCoverToSpotifyAsync(Guid playlistId, Guid userId, byte[] imageBytes);
     Task<List<AiConversationMessage>> GetConversationAsync(Guid playlistId, Guid userId);
+    Task<User?> GetUserAsync(Guid userId);
 }

@@ -70,12 +70,14 @@ public class PlaylistService : IPlaylistService
         await _spotifyClient.UploadPlaylistCoverAsync(token, playlist.SpotifyPlaylistId, jpegBase64);
     }
 
+    public async Task<User?> GetUserAsync(Guid userId)
+        => await _userRepository.GetByIdAsync(userId);
+
     public async Task<List<AiConversationMessage>> GetConversationAsync(Guid playlistId, Guid userId)
     {
         var playlist = await _playlistRepository.GetByIdAsync(playlistId);
         if (playlist is null || playlist.UserId != userId) return [];
-        if (playlist.SessionId == Guid.Empty) return [];
-        return await _conversationRepository.GetBySessionIdAsync(playlist.SessionId);
+        return await _conversationRepository.GetByPlaylistIdAsync(playlistId);
     }
 
     private static string? ReencodeToJpegBase64(byte[] bytes)

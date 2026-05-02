@@ -5,7 +5,7 @@ namespace DJBrate.Application.Mcp;
 
 public static class McpToolDefinitions
 {
-    public static List<AiToolDefinition> GetAllTools() =>
+    public static List<AiToolDefinition> GetCreateModeTools() =>
     [
         new AiToolDefinition
         {
@@ -45,9 +45,64 @@ public static class McpToolDefinitions
         }
     ];
 
+    public static List<AiToolDefinition> GetEditModeTools() =>
+    [
+        new AiToolDefinition
+        {
+            Name = ToolNames.GetCurrentPlaylistTracks,
+            Description = "Returns the current tracks in the playlist being edited. Always call this first before making any changes.",
+            Parameters = JsonDocument.Parse("""{"type": "object", "properties": {}}""")
+        },
+        new AiToolDefinition
+        {
+            Name = ToolNames.RemoveTracks,
+            Description = "Removes specific tracks from the current playlist by their Spotify track IDs.",
+            Parameters = JsonDocument.Parse("""
+            {
+                "type": "object",
+                "properties": {
+                    "spotify_track_ids": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "List of Spotify track IDs to remove"
+                    }
+                },
+                "required": ["spotify_track_ids"]
+            }
+            """)
+        },
+        new AiToolDefinition
+        {
+            Name = ToolNames.AddTracks,
+            Description = "Searches for and adds tracks to the current playlist.",
+            Parameters = JsonDocument.Parse("""
+            {
+                "type": "object",
+                "properties": {
+                    "tracks": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "artist": { "type": "string" },
+                                "title":  { "type": "string" }
+                            },
+                            "required": ["artist", "title"]
+                        }
+                    }
+                },
+                "required": ["tracks"]
+            }
+            """)
+        }
+    ];
+
     public static class ToolNames
     {
-        public const string GetUserTopTracks  = "get_user_top_tracks";
-        public const string GetUserTopArtists = "get_user_top_artists";
+        public const string GetUserTopTracks         = "get_user_top_tracks";
+        public const string GetUserTopArtists        = "get_user_top_artists";
+        public const string GetCurrentPlaylistTracks = "get_current_playlist_tracks";
+        public const string RemoveTracks             = "remove_tracks_from_current_playlist";
+        public const string AddTracks                = "add_tracks_to_current_playlist";
     }
 }

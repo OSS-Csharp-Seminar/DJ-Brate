@@ -17,6 +17,8 @@ public interface IMoodSessionService
         float? danceability,
         string? playlistNameOverride,
         string? playlistDescriptionOverride);
+
+    Task<string> RefineAsync(User user, Playlist playlist, string userMessage);
 }
 
 public class PlaylistGenerationResult

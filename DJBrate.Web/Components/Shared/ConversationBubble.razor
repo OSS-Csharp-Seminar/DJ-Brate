@@ -55,14 +55,18 @@ else if (Message.Role == AiMessageRoles.Assistant)
 @code {
     [Parameter, EditorRequired] public AiConversationMessage Message { get; set; } = null!;
 
+    private AiConversationMessage? _parsedMessage;
     private string? _reasoning;
     private string? _userMainText;
     private List<string> _userTags = [];
 
     private static readonly Dictionary<string, string> ToolLabels = new()
     {
-        ["get_user_top_tracks"]  = "🔧 DJ Brate checked your top tracks",
-        ["get_user_top_artists"] = "🔧 DJ Brate checked your top artists",
+        ["get_user_top_tracks"]                    = "🔧 DJ Brate checked your top tracks",
+        ["get_user_top_artists"]                   = "🔧 DJ Brate checked your top artists",
+        ["get_current_playlist_tracks"]            = "🔧 DJ Brate inspected the playlist",
+        ["remove_tracks_from_current_playlist"]    = "🔧 DJ Brate removed tracks",
+        ["add_tracks_to_current_playlist"]         = "🔧 DJ Brate added tracks",
     };
 
     private static readonly Regex SplitOnMeta = new(
@@ -73,6 +77,9 @@ else if (Message.Role == AiMessageRoles.Assistant)
 
     protected override async Task OnParametersSetAsync()
     {
+        if (ReferenceEquals(Message, _parsedMessage)) return;
+        _parsedMessage = Message;
+
         _reasoning    = null;
         _userMainText = null;
         _userTags     = [];

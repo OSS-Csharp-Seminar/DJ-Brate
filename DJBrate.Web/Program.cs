@@ -59,6 +59,7 @@ builder.Services.AddScoped<IAiModelConfigRepository, AiModelConfigRepository>();
 builder.Services.AddScoped<IMcpToolCallRepository, McpToolCallRepository>();
 builder.Services.AddScoped<IAiMoodMappingRepository, AiMoodMappingRepository>();
 builder.Services.AddScoped<IAiConversationMessageRepository, AiConversationMessageRepository>();
+builder.Services.AddScoped<ITrackFeedbackRepository, TrackFeedbackRepository>();
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IMoodSessionService, MoodSessionService>();
@@ -71,6 +72,8 @@ builder.Services.AddScoped<IAiMoodService, AiMoodService>();
 builder.Services.AddScoped<McpDispatcher>();
 builder.Services.AddScoped<PlaybackState>();
 builder.Services.AddScoped<GenerationState>();
+builder.Services.AddScoped<RefinementState>();
+builder.Services.AddScoped<ITrackFeedbackService, TrackFeedbackService>();
 
 var app = builder.Build();
 

@@ -135,7 +135,8 @@ public class MoodSessionService : IMoodSessionService
 
         await _playlistRepository.AddAsync(playlist);
 
-        session.Status = MoodSessionStatuses.Completed;
+        session.Status      = MoodSessionStatuses.Completed;
+        session.CompletedAt = DateTime.UtcNow;
         await _sessionRepository.UpdateAsync(session);
 
         return new PlaylistGenerationResult
@@ -145,9 +146,42 @@ public class MoodSessionService : IMoodSessionService
         };
     }
 
+    public async Task<string> RefineAsync(User user, Playlist playlist, string userMessage)
+    {
+        var config = await _configRepository.GetActiveConfigAsync()
+            ?? throw new InvalidOperationException("No active AI model config found.");
+
+        var session = new MoodSession
+        {
+            UserId             = user.Id,
+            AiConfigId         = config.Id,
+            SessionType        = MoodSessionTypes.Edit,
+            RefinesPlaylistId  = playlist.Id,
+            Status             = MoodSessionStatuses.Creating
+        };
+        await _sessionRepository.AddAsync(session);
+
+        var refineTask = _aiMoodService.RefinePlaylistAsync(session, playlist, user, userMessage, config);
+        await ((Task)refineTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
+        if (!refineTask.IsCompletedSuccessfully)
+        {
+            await MarkFailedAsync(session);
+            throw new InvalidOperationException(
+                refineTask.Exception?.InnerException?.Message ?? "AI refinement failed.");
+        }
+
+        session.Status      = MoodSessionStatuses.Completed;
+        session.CompletedAt = DateTime.UtcNow;
+        await _sessionRepository.UpdateAsync(session);
+
+        return refineTask.Result;
+    }
+
     private async Task MarkFailedAsync(MoodSession session)
     {
-        session.Status = MoodSessionStatuses.Failed;
+        session.Status      = MoodSessionStatuses.Failed;
+        session.CompletedAt = DateTime.UtcNow;
         await _sessionRepository.UpdateAsync(session);
     }
 }

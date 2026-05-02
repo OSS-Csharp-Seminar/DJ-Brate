@@ -79,6 +79,14 @@ public class SpotifyApiClient : ISpotifyApiClient
                 new PlaylistAddItemsRequest(batch.ToList()));
     }
 
+    public async Task RemoveTracksFromPlaylistAsync(string accessToken, string playlistId, List<string> trackUris)
+    {
+        var items = trackUris
+            .Select(uri => new PlaylistRemoveItemsRequestV2.Item { Uri = uri })
+            .ToList();
+        await Client(accessToken).Playlists.RemovePlaylistItems(playlistId, new PlaylistRemoveItemsRequestV2 { Items = items });
+    }
+
     public async Task UploadPlaylistCoverAsync(string accessToken, string playlistId, string base64JpegImage)
     {
         await Client(accessToken).Playlists.UploadCover(playlistId, base64JpegImage);

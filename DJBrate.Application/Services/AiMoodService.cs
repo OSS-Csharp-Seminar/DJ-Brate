@@ -67,6 +67,7 @@ public class AiMoodService : IAiMoodService
     private readonly IAiMoodMappingRepository _moodMappingRepo;
     private readonly ISpotifyApiClient _spotifyClient;
     private readonly ISpotifyTokenService _tokenService;
+    private readonly ITrackFeedbackRepository _feedbackRepo;
 
     public AiMoodService(
         IAiClient aiClient,
@@ -74,7 +75,8 @@ public class AiMoodService : IAiMoodService
         IAiConversationMessageRepository messageRepo,
         IAiMoodMappingRepository moodMappingRepo,
         ISpotifyApiClient spotifyClient,
-        ISpotifyTokenService tokenService)
+        ISpotifyTokenService tokenService,
+        ITrackFeedbackRepository feedbackRepo)
     {
         _aiClient        = aiClient;
         _mcpDispatcher   = mcpDispatcher;
@@ -82,6 +84,7 @@ public class AiMoodService : IAiMoodService
         _moodMappingRepo = moodMappingRepo;
         _spotifyClient   = spotifyClient;
         _tokenService    = tokenService;
+        _feedbackRepo    = feedbackRepo;
     }
 
     public async Task<AiMoodResult> GeneratePlaylistAsync(MoodSession session, User user, AiModelConfig config)
@@ -127,7 +130,7 @@ public class AiMoodService : IAiMoodService
             }
         }
 
-        var tools = McpToolDefinitions.GetAllTools();
+        var tools = McpToolDefinitions.GetCreateModeTools();
         var conversation = new List<AiMessage>();
         var sequenceOrder = 0;
 
@@ -148,7 +151,8 @@ public class AiMoodService : IAiMoodService
                     await SaveMessage(session.Id, AiMessageRoles.Assistant, $"[tool_call: {toolCall.Name}]", sequenceOrder++);
 
                     var result = await _mcpDispatcher.ExecuteToolAsync(
-                        session.Id, user, toolCall.Name, toolCall.Arguments);
+                        new McpExecutionContext { SessionId = session.Id, User = user, IsEditMode = false },
+                        toolCall.Name, toolCall.Arguments);
 
                     conversation.Add(new AiMessage
                     {
@@ -195,6 +199,90 @@ public class AiMoodService : IAiMoodService
         }
 
         throw new InvalidOperationException("AI did not produce a valid JSON response within the allowed rounds.");
+    }
+
+    public async Task<string> RefinePlaylistAsync(MoodSession editSession, Playlist playlist, User user, string userMessage, AiModelConfig config)
+    {
+        var feedbacks  = await _feedbackRepo.GetByUserAndPlaylistAsync(user.Id, playlist.Id);
+        var liked      = feedbacks.Where(f => f.FeedbackType == FeedbackTypes.Like).Select(f => f.SpotifyTrackId).ToList();
+        var skipped    = feedbacks.Where(f => f.FeedbackType == FeedbackTypes.Skip).Select(f => f.SpotifyTrackId).ToList();
+
+        var feedbackContext = "";
+        if (liked.Count > 0 || skipped.Count > 0)
+        {
+            var parts = new List<string>();
+            if (liked.Count > 0)   parts.Add($"Liked track IDs (user enjoys these, keep or add similar): {string.Join(", ", liked)}");
+            if (skipped.Count > 0) parts.Add($"Disliked track IDs (user dislikes these, avoid similar): {string.Join(", ", skipped)}");
+            feedbackContext = $"\n\nUser feedback on current tracks:\n{string.Join("\n", parts)}";
+        }
+
+        var editSystemPrompt = $"""
+            You are DJ Brate, an AI DJ editing a Spotify playlist based on the user's instructions.
+
+            You have tools to inspect and modify the playlist:
+            - get_current_playlist_tracks: ALWAYS call this first to see what's currently in the playlist.
+            - remove_tracks_from_current_playlist: remove specific tracks by their Spotify IDs.
+            - add_tracks_to_current_playlist: search for and add new tracks by artist + title.
+
+            Rules:
+            - Always inspect the playlist before making changes.
+            - Honor the user's request precisely. If they say "remove all slow songs", do it. If they say "add 5 hip-hop tracks", add 5.
+            - When adding tracks, suggest real songs you are confident exist on Spotify.
+            - Artist name must be the primary artist only (no "feat.").
+            - After making all changes, respond with a short plain-text summary of what you did (no JSON).{feedbackContext}
+            """;
+
+        var ctx = new McpExecutionContext
+        {
+            SessionId  = editSession.Id,
+            User       = user,
+            PlaylistId = playlist.Id,
+            IsEditMode = true
+        };
+
+        var history = await _messageRepo.GetByPlaylistIdAsync(playlist.Id);
+        var conversation = history
+            .Where(m => m.Role is AiMessageRoles.User or AiMessageRoles.Assistant)
+            .Select(m => new AiMessage { Role = m.Role, Text = m.Content })
+            .ToList();
+
+        conversation.Add(new AiMessage { Role = AiMessageRoles.User, Text = userMessage });
+
+        var tools = McpToolDefinitions.GetEditModeTools();
+        var sequenceOrder = history.Count;
+
+        await SaveMessage(editSession.Id, AiMessageRoles.User, userMessage, sequenceOrder++);
+
+        for (var round = 0; round < MaxToolCallRounds; round++)
+        {
+            var response = await _aiClient.SendMessageAsync(
+                editSystemPrompt, conversation, tools, config.Temperature, config.MaxTokens);
+
+            if (response.HasToolCalls)
+            {
+                foreach (var toolCall in response.ToolCalls)
+                {
+                    conversation.Add(new AiMessage { Role = AiMessageRoles.Assistant, ToolCall = toolCall });
+                    await SaveMessage(editSession.Id, AiMessageRoles.Assistant, $"[tool_call: {toolCall.Name}]", sequenceOrder++);
+
+                    var toolResult = await _mcpDispatcher.ExecuteToolAsync(ctx, toolCall.Name, toolCall.Arguments);
+
+                    conversation.Add(new AiMessage
+                    {
+                        Role = AiMessageRoles.Function,
+                        ToolResult = new AiToolResult { ToolCallId = toolCall.Name, Result = toolResult }
+                    });
+                    await SaveMessage(editSession.Id, AiMessageRoles.Function, toolResult, sequenceOrder++);
+                }
+            }
+            else if (response.Text is not null)
+            {
+                await SaveMessage(editSession.Id, AiMessageRoles.Assistant, response.Text, sequenceOrder++);
+                return response.Text;
+            }
+        }
+
+        return "Done.";
     }
 
     private static string BuildUserPrompt(MoodSession session)

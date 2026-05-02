@@ -14,6 +14,8 @@
 @inject NavigationManager Nav
 @inject IWebHostEnvironment Env
 @inject PlaybackState Playback
+@inject RefinementState Refinement
+@inject ITrackFeedbackService FeedbackService
 
 <PageTitle>Playlists - DJ Brate</PageTitle>
 
@@ -101,25 +103,33 @@
                 <div class="track-list">
                     @foreach (var track in playlist.PlaylistTracks.OrderBy(t => t.Position))
                     {
-                        <div class="track-item">
-                            <div class="track-row @(Playback.PlayingTrackId == track.SpotifyTrackId ? "is-playing-row" : "")"
-                                 role="button"
-                                 tabindex="0"
-                                 aria-label="@(Playback.PlayingTrackId == track.SpotifyTrackId ? "Pause preview" : "Play preview")"
-                                 @onclick="() => PlayTrack(track.SpotifyTrackId)">
-                                <span class="track-position">@track.Position</span>
-                                @if (!string.IsNullOrEmpty(track.AlbumImageUrl))
-                                {
-                                    <img src="@track.AlbumImageUrl" alt="" class="track-art" loading="lazy" />
-                                }
-                                else
-                                {
-                                    <div class="track-art track-art-placeholder">&#9835;</div>
-                                }
-                                <div class="track-info">
-                                    <div class="track-name">@track.TrackName</div>
-                                    <div class="track-artist">@track.ArtistName</div>
-                                </div>
+                        <div class="track-row @(Playback.PlayingTrackId == track.SpotifyTrackId ? "is-playing-row" : "")"
+                             role="button"
+                             tabindex="0"
+                             aria-label="@(Playback.PlayingTrackId == track.SpotifyTrackId ? "Pause preview" : "Play preview")"
+                             @onclick="() => PlayTrack(track.SpotifyTrackId)">
+                            <span class="track-position">@track.Position</span>
+                            @if (!string.IsNullOrEmpty(track.AlbumImageUrl))
+                            {
+                                <img src="@track.AlbumImageUrl" alt="" class="track-art" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="track-art track-art-placeholder">&#9835;</div>
+                            }
+                            <div class="track-info">
+                                <div class="track-name">@track.TrackName</div>
+                                <div class="track-artist">@track.ArtistName</div>
+                            </div>
+                            <div class="track-feedback">
+                                <button class="feedback-btn @(feedback.GetValueOrDefault(track.Id) == FeedbackTypes.Like ? "feedback-active-like" : "")"
+                                        aria-label="Like"
+                                        @onclick="() => ToggleFeedback(track, FeedbackTypes.Like)"
+                                        @onclick:stopPropagation="true">&#128077;</button>
+                                <button class="feedback-btn @(feedback.GetValueOrDefault(track.Id) == FeedbackTypes.Skip ? "feedback-active-skip" : "")"
+                                        aria-label="Dislike"
+                                        @onclick="() => ToggleFeedback(track, FeedbackTypes.Skip)"
+                                        @onclick:stopPropagation="true">&#128078;</button>
                             </div>
                         </div>
                     }
@@ -134,14 +144,14 @@
             </div>
 
             <aside class="conversation">
-                <h2>How DJ Brate built this</h2>
+                <h2>DJ Brate chat</h2>
                 @if (conversation.Count == 0)
                 {
                     <p class="muted">No conversation recorded.</p>
                 }
                 else
                 {
-                    <div class="conversation-list">
+                    <div class="conversation-list" @ref="conversationListRef">
                         @foreach (var msg in conversation)
                         {
                             @if (msg.Role != AiMessageRoles.Function)
@@ -151,6 +161,26 @@
                         }
                     </div>
                 }
+
+                @if (Refinement.ErrorMessage is not null)
+                {
+                    <p class="refine-error">@Refinement.ErrorMessage</p>
+                }
+
+                <div class="refine-input">
+                    <textarea class="refine-textarea"
+                              placeholder="Ask DJ Brate to edit this playlist…"
+                              @bind="refineText"
+                              @bind:event="oninput"
+                              @onkeydown="HandleRefineKeyDown"
+                              disabled="@Refinement.IsRefining"
+                              rows="2"></textarea>
+                    <button class="refine-send"
+                            @onclick="SendRefinement"
+                            disabled="@(Refinement.IsRefining || string.IsNullOrWhiteSpace(refineText))">
+                        @(Refinement.IsRefining ? "…" : "Send")
+                    </button>
+                </div>
             </aside>
         </div>
     }
@@ -166,6 +196,10 @@
     private Guid currentUserId;
     private bool uploadingCover;
     private string? coverError;
+    private string refineText = "";
+    private ElementReference conversationListRef;
+    private User? currentUser;
+    private Dictionary<Guid, string> feedback = [];
 
     private const long MaxCoverBytes = 5 * 1024 * 1024;
     private static readonly string[] AllowedCoverExtensions = [".jpg", ".jpeg", ".png", ".webp"];
@@ -173,9 +207,20 @@
     protected override void OnInitialized()
     {
         Playback.OnChange += HandlePlaybackChange;
+        Refinement.OnChange += HandleRefinementChange;
     }
 
     private void HandlePlaybackChange() => InvokeAsync(StateHasChanged);
+
+    private async void HandleRefinementChange()
+    {
+        if (playlist is not null && !Refinement.IsRefining)
+        {
+            conversation = await PlaylistService.GetConversationAsync(playlist.Id, currentUserId);
+            playlist = await PlaylistService.GetPlaylistByIdAsync(playlist.Id);
+        }
+        await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -183,6 +228,7 @@
         var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (!Guid.TryParse(idClaim, out var userId)) return;
         currentUserId = userId;
+        currentUser ??= await PlaylistService.GetUserAsync(userId);
 
         if (Id is null)
         {
@@ -198,9 +244,18 @@
             conversation = playlist is not null
                 ? await PlaylistService.GetConversationAsync(Id.Value, userId)
                 : [];
+            feedback = playlist is not null
+                ? await FeedbackService.GetForPlaylistAsync(userId, Id.Value)
+                : [];
             loadedId = Id;
             coverError = null;
         }
+    }
+
+    private async Task ToggleFeedback(PlaylistTrack track, string feedbackType)
+    {
+        await FeedbackService.ToggleFeedbackAsync(currentUserId, track, feedbackType);
+        feedback = await FeedbackService.GetForPlaylistAsync(currentUserId, playlist!.Id);
     }
 
     private async Task PlayTrack(string trackId)
@@ -271,8 +326,23 @@
         uploadingCover = false;
     }
 
+    private async Task SendRefinement()
+    {
+        if (playlist is null || currentUser is null || string.IsNullOrWhiteSpace(refineText)) return;
+        var message = refineText.Trim();
+        refineText = "";
+        await Refinement.RefineAsync(currentUser, playlist, message);
+    }
+
+    private async Task HandleRefineKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+            await SendRefinement();
+    }
+
     public void Dispose()
     {
         Playback.OnChange -= HandlePlaybackChange;
+        Refinement.OnChange -= HandleRefinementChange;
     }
 }
