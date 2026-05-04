@@ -1,0 +1,293 @@
+@page "/statistics"
+@attribute [Authorize]
+@using System.Security.Claims
+@using DJBrate.Application.Interfaces
+@using DJBrate.Application.Models.Spotify
+@using DJBrate.Application.Models.Stats
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IListeningStatsService StatsService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Statistics - DJ Brate</PageTitle>
+
+<div class="page">
+    <h1>Your statistics</h1>
+
+    @if (stats is null)
+    {
+        <p class="muted">Loading...</p>
+    }
+    else if (stats.TotalSessions == 0)
+    {
+        <div class="empty-state">
+            <p class="empty-title">No data yet</p>
+            <p class="empty-detail">Generate your first playlist to start seeing your DJ Brate insights.</p>
+            <a class="btn-primary" href="/">Generate your first playlist</a>
+        </div>
+    }
+    else
+    {
+        <div class="stat-grid">
+            <div class="stat-card">
+                <p class="stat-label">Total playlists</p>
+                <p class="stat-value">@stats.TotalPlaylists</p>
+                <p class="stat-sub">@stats.TotalSessions sessions total</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Success rate</p>
+                <p class="stat-value">@SuccessRatePercent.ToString("0")<span class="stat-unit">%</span></p>
+                <p class="stat-sub">@stats.CompletedSessions completed · @stats.FailedSessions failed</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Avg generation time</p>
+                <p class="stat-value">@stats.AvgGenerationSeconds.ToString("0.0")<span class="stat-unit">s</span></p>
+                <p class="stat-sub">across completed sessions</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Liked tracks</p>
+                <p class="stat-value">@stats.LikeCount</p>
+                <p class="stat-sub">tracks you loved</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Disliked tracks</p>
+                <p class="stat-value">@stats.SkipCount</p>
+                <p class="stat-sub">tracks you skipped</p>
+            </div>
+        </div>
+
+        <section class="stat-section">
+            <h2>Last 30 days</h2>
+            @if (stats.Last30Days.Count == 0)
+            {
+                <p class="muted">No playlists in the last 30 days.</p>
+            }
+            else
+            {
+                <div class="sparkline-wrap">
+                    <svg viewBox="0 0 @SparklineWidth @SparklineHeight"
+                         preserveAspectRatio="none"
+                         class="sparkline"
+                         role="img"
+                         aria-label="Playlists per day">
+                        <polyline points="@SparklinePoints" />
+                        @foreach (var dot in SparklineDots)
+                        {
+                            <circle cx="@dot.X" cy="@dot.Y" r="3.5">
+                                <title>@dot.Date.ToString("MMM d") — @dot.Count @(dot.Count == 1 ? "playlist" : "playlists")</title>
+                            </circle>
+                        }
+                    </svg>
+                    <div class="sparkline-axis">
+                        <span>@SparklineFromLabel</span>
+                        <span>@SparklinePeakLabel</span>
+                        <span>@SparklineToLabel</span>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <div class="stat-two-col">
+            <section class="stat-section">
+                <h2>Mood breakdown</h2>
+                @if (stats.MoodBreakdown.Count == 0)
+                {
+                    <p class="muted">No detected moods yet.</p>
+                }
+                else
+                {
+                    <div class="bar-list">
+                        @foreach (var mood in stats.MoodBreakdown)
+                        {
+                            <div class="bar-row">
+                                <span class="bar-label">@mood.Mood</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="width:@(MoodPercent(mood.Count))%"></div>
+                                </div>
+                                <span class="bar-val">@mood.Count</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="stat-section">
+                <h2>Genres you generate for</h2>
+                @if (stats.TopGenres.Count == 0)
+                {
+                    <p class="muted">No genre data yet — generate a playlist with a genre chip selected.</p>
+                }
+                else
+                {
+                    <div class="tag-cloud">
+                        @foreach (var genre in stats.TopGenres)
+                        {
+                            <span class="genre-tag">@genre.Genre <span class="genre-count">@genre.Count</span></span>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+
+        <section class="stat-section">
+            <h2>Top tracks</h2>
+            @if (TotalTopTracks == 0)
+            {
+                <p class="muted">No top tracks synced yet.</p>
+            }
+            else
+            {
+                <div class="tabs">
+                    @foreach (var (key, label) in TimeRangeTabs)
+                    {
+                        <button type="button"
+                                class="tab @(selectedRange == key ? "tab-active" : "")"
+                                @onclick="() => selectedRange = key">
+                            @label
+                        </button>
+                    }
+                </div>
+                @if (CurrentTopTracks.Count == 0)
+                {
+                    <p class="muted">No tracks for this range.</p>
+                }
+                else
+                {
+                    <ol class="ranked-list">
+                        @foreach (var t in CurrentTopTracks)
+                        {
+                            <li class="ranked-row">
+                                <span class="rank-pos">@t.Rank</span>
+                                <div class="rank-info">
+                                    <div class="rank-name">@t.TrackName</div>
+                                    <div class="rank-artist">@t.ArtistName</div>
+                                </div>
+                            </li>
+                        }
+                    </ol>
+                }
+            }
+        </section>
+
+        <section class="stat-section">
+            <h2>AI tool usage</h2>
+            @if (stats.ToolUsage.Count == 0)
+            {
+                <p class="muted">No tool calls recorded yet — they fire when DJ Brate consults your top history or edits a playlist.</p>
+            }
+            else
+            {
+                <div class="tool-table">
+                    <div class="tool-row tool-head">
+                        <span>Tool</span>
+                        <span>Calls</span>
+                        <span>Success</span>
+                        <span>Avg ms</span>
+                    </div>
+                    @foreach (var tool in stats.ToolUsage)
+                    {
+                        <div class="tool-row">
+                            <span class="tool-name">@tool.ToolName</span>
+                            <span>@tool.CallCount</span>
+                            <span>@((tool.SuccessRate * 100).ToString("0"))%</span>
+                            <span>@tool.AvgMs.ToString("0")</span>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private const int SparklineWidth = 600;
+    private const int SparklineHeight = 80;
+    private const int SparklinePadding = 6;
+
+    private static readonly (string Key, string Label)[] TimeRangeTabs =
+    [
+        (SpotifyTimeRange.ShortTerm.ToApiString(),  "Last 4 weeks"),
+        (SpotifyTimeRange.MediumTerm.ToApiString(), "Last 6 months"),
+        (SpotifyTimeRange.LongTerm.ToApiString(),   "All time"),
+    ];
+
+    private UserStatsDto? stats;
+    private string selectedRange = SpotifyTimeRange.MediumTerm.ToApiString();
+
+    private double SuccessRatePercent =>
+        stats is null || stats.TotalSessions == 0
+            ? 0
+            : (double)stats.CompletedSessions / stats.TotalSessions * 100;
+
+    private int TotalTopTracks =>
+        stats?.TopTracksByRange.Values.Sum(v => v.Count) ?? 0;
+
+    private List<TopTrackEntry> CurrentTopTracks =>
+        stats is not null && stats.TopTracksByRange.TryGetValue(selectedRange, out var list)
+            ? list
+            : [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idClaim, out var userId)) return;
+        stats = await StatsService.GetUserStatsAsync(userId);
+    }
+
+    private double MoodPercent(int count)
+    {
+        if (stats is null || stats.MoodBreakdown.Count == 0) return 0;
+        var max = stats.MoodBreakdown.Max(m => m.Count);
+        return max == 0 ? 0 : (double)count / max * 100;
+    }
+
+    private string SparklinePoints
+    {
+        get
+        {
+            if (stats is null || stats.Last30Days.Count == 0) return "";
+            var max = Math.Max(1, stats.Last30Days.Max(d => d.Count));
+            var n = stats.Last30Days.Count;
+            var span = SparklineWidth - SparklinePadding * 2;
+            var height = SparklineHeight - SparklinePadding * 2;
+
+            return string.Join(" ", stats.Last30Days.Select((d, i) =>
+            {
+                var x = n == 1 ? SparklineWidth / 2.0 : SparklinePadding + (double)i / (n - 1) * span;
+                var y = SparklinePadding + (1 - (double)d.Count / max) * height;
+                return $"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)},{y.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}";
+            }));
+        }
+    }
+
+    private IEnumerable<(double X, double Y, DateOnly Date, int Count)> SparklineDots
+    {
+        get
+        {
+            if (stats is null || stats.Last30Days.Count == 0) yield break;
+            var max = Math.Max(1, stats.Last30Days.Max(d => d.Count));
+            var n = stats.Last30Days.Count;
+            var span = SparklineWidth - SparklinePadding * 2;
+            var height = SparklineHeight - SparklinePadding * 2;
+
+            for (var i = 0; i < n; i++)
+            {
+                var d = stats.Last30Days[i];
+                var x = n == 1 ? SparklineWidth / 2.0 : SparklinePadding + (double)i / (n - 1) * span;
+                var y = SparklinePadding + (1 - (double)d.Count / max) * height;
+                yield return (x, y, d.Date, d.Count);
+            }
+        }
+    }
+
+    private string SparklineFromLabel =>
+        stats?.Last30Days.FirstOrDefault()?.Date.ToString("MMM d") ?? "";
+
+    private string SparklineToLabel =>
+        stats?.Last30Days.LastOrDefault()?.Date.ToString("MMM d") ?? "";
+
+    private string SparklinePeakLabel =>
+        stats is null || stats.Last30Days.Count == 0
+            ? ""
+            : $"peak {stats.Last30Days.Max(d => d.Count)}/day";
+}

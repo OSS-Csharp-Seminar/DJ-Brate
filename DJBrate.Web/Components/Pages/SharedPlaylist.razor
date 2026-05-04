@@ -1,0 +1,140 @@
+@page "/share/{Token}"
+@implements IDisposable
+@using DJBrate.Application.Interfaces
+@using DJBrate.Domain.Entities
+@using DJBrate.Web.Components.Shared
+@using DJBrate.Web.Services
+@inject IPlaylistService PlaylistService
+@inject PlaybackState Playback
+
+<PageTitle>@(playlist is not null ? $"{playlist.Name} - DJ Brate" : "Shared playlist - DJ Brate")</PageTitle>
+
+<div class="page">
+    @if (loaded && playlist is null)
+    {
+        <div class="not-shared">
+            <p class="not-shared-title">This playlist isn't available</p>
+            <p class="not-shared-detail">The link may be wrong or the owner has stopped sharing it.</p>
+            <a class="btn-primary" href="/">Go to DJ Brate</a>
+        </div>
+    }
+    else if (playlist is null)
+    {
+        <p class="muted">Loading playlist...</p>
+    }
+    else
+    {
+        <p class="shared-eyebrow">Shared with you · <a href="/" class="shared-link">Made with DJ Brate</a></p>
+
+        <div class="playlist-header">
+            <div class="playlist-cover">
+                @if (!string.IsNullOrEmpty(playlist.ImageUrl))
+                {
+                    <img src="@playlist.ImageUrl" alt="" class="playlist-cover-img" />
+                }
+                else
+                {
+                    <div class="playlist-cover-img playlist-cover-placeholder">&#9835;</div>
+                }
+            </div>
+            <div class="playlist-header-text">
+                <h1>@playlist.Name</h1>
+                @if (!string.IsNullOrWhiteSpace(playlist.Description))
+                {
+                    <p class="muted">@playlist.Description</p>
+                }
+            </div>
+        </div>
+
+        <div class="detail-body">
+            <div class="detail-tracks">
+                <div class="track-list">
+                    @foreach (var track in playlist.PlaylistTracks.OrderBy(t => t.Position))
+                    {
+                        <div class="track-row @(Playback.PlayingTrackId == track.SpotifyTrackId ? "is-playing-row" : "")"
+                             role="button"
+                             tabindex="0"
+                             aria-label="@(Playback.PlayingTrackId == track.SpotifyTrackId ? "Pause preview" : "Play preview")"
+                             @onclick="() => PlayTrack(track.SpotifyTrackId)">
+                            <span class="track-position">@track.Position</span>
+                            @if (!string.IsNullOrEmpty(track.AlbumImageUrl))
+                            {
+                                <img src="@track.AlbumImageUrl" alt="" class="track-art" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="track-art track-art-placeholder">&#9835;</div>
+                            }
+                            <div class="track-info">
+                                <div class="track-name">@track.TrackName</div>
+                                <div class="track-artist">@track.ArtistName</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(playlist.SpotifyPlaylistId))
+                {
+                    <a class="open-spotify"
+                       href="@($"https://open.spotify.com/playlist/{playlist.SpotifyPlaylistId}")"
+                       target="_blank">Open in Spotify</a>
+                }
+            </div>
+
+            <aside class="conversation">
+                <h2>How DJ Brate built this</h2>
+                @if (conversation.Count == 0)
+                {
+                    <p class="muted">No conversation recorded.</p>
+                }
+                else
+                {
+                    <div class="conversation-list">
+                        @foreach (var msg in conversation)
+                        {
+                            @if (msg.Role != AiMessageRoles.Function)
+                            {
+                                <ConversationBubble Message="msg" />
+                            }
+                        }
+                    </div>
+                }
+            </aside>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Token { get; set; } = "";
+
+    private Playlist? playlist;
+    private List<AiConversationMessage> conversation = [];
+    private bool loaded;
+
+    protected override void OnInitialized()
+    {
+        Playback.OnChange += HandlePlaybackChange;
+    }
+
+    private void HandlePlaybackChange() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        playlist = await PlaylistService.GetByShareTokenAsync(Token);
+        conversation = playlist is not null
+            ? await PlaylistService.GetSharedConversationAsync(Token)
+            : [];
+        loaded = true;
+    }
+
+    private async Task PlayTrack(string trackId)
+    {
+        if (playlist is null) return;
+        await Playback.PlayAsync(playlist.PlaylistTracks, trackId, playlist.Id);
+    }
+
+    public void Dispose()
+    {
+        Playback.OnChange -= HandlePlaybackChange;
+    }
+}

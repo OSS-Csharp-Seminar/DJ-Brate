@@ -7,6 +7,7 @@ using DJBrate.Infrastructure.Data;
 using DJBrate.Infrastructure.Repositories;
 using DJBrate.Infrastructure.Spotify;
 using DJBrate.Infrastructure.Ai;
+using DJBrate.Infrastructure.Services;
 using DJBrate.Application.Mcp;
 using DJBrate.Web.Components;
 using DJBrate.Web.Services;
@@ -74,6 +75,7 @@ builder.Services.AddScoped<PlaybackState>();
 builder.Services.AddScoped<GenerationState>();
 builder.Services.AddScoped<RefinementState>();
 builder.Services.AddScoped<ITrackFeedbackService, TrackFeedbackService>();
+builder.Services.AddScoped<IListeningStatsService, ListeningStatsService>();
 
 var app = builder.Build();
 

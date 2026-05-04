@@ -20,6 +20,11 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
             .Include(p => p.PlaylistTracks)
             .FirstOrDefaultAsync(p => p.Id == id);
 
+    public async Task<Playlist?> GetByShareTokenAsync(string token)
+        => await _dbSet
+            .Include(p => p.PlaylistTracks)
+            .FirstOrDefaultAsync(p => p.ShareToken == token && p.IsShared);
+
     public async Task RemoveTracksAsync(Guid playlistId, List<string> spotifyTrackIds)
     {
         var tracks = await _context.Set<PlaylistTrack>()

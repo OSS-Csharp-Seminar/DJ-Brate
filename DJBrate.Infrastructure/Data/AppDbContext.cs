@@ -67,6 +67,11 @@ public class AppDbContext : DbContext
             .WithMany(u => u.Playlists)
             .HasForeignKey(p => p.UserId);
 
+        modelBuilder.Entity<Playlist>()
+            .HasIndex(p => p.ShareToken)
+            .IsUnique()
+            .HasFilter("share_token IS NOT NULL");
+
         modelBuilder.Entity<PlaylistTrack>()
             .HasOne(pt => pt.Playlist)
             .WithMany(p => p.PlaylistTracks)

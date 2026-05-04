@@ -16,6 +16,8 @@
 @inject PlaybackState Playback
 @inject RefinementState Refinement
 @inject ITrackFeedbackService FeedbackService
+@inject GenerationState Generation
+@inject IJSRuntime JS
 
 <PageTitle>Playlists - DJ Brate</PageTitle>
 
@@ -94,6 +96,34 @@
                 @if (coverError is not null)
                 {
                     <p class="cover-error">@coverError</p>
+                }
+
+                <div class="playlist-actions">
+                    @if (playlist.IsShared && !string.IsNullOrEmpty(playlist.ShareToken))
+                    {
+                        <button class="btn-ghost playlist-action-btn" @onclick="ToggleShare" disabled="@sharingBusy">
+                            Stop sharing
+                        </button>
+                        <button class="btn-ghost playlist-action-btn" @onclick="CopyShareLink">
+                            @(copyFeedback ? "Copied!" : "Copy link")
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn-ghost playlist-action-btn" @onclick="ToggleShare" disabled="@sharingBusy">
+                            @(sharingBusy ? "..." : "Share")
+                        </button>
+                    }
+                    <button class="btn-ghost playlist-action-btn"
+                            @onclick="Regenerate"
+                            disabled="@(Generation.IsGenerating || regenerating)">
+                        @(Generation.IsGenerating || regenerating ? "Regenerating..." : "Regenerate")
+                    </button>
+                </div>
+
+                @if (playlist.IsShared && !string.IsNullOrEmpty(playlist.ShareToken))
+                {
+                    <p class="share-url" title="@ShareUrl">@ShareUrl</p>
                 }
             </div>
         </div>
@@ -200,6 +230,14 @@
     private ElementReference conversationListRef;
     private User? currentUser;
     private Dictionary<Guid, string> feedback = [];
+    private bool sharingBusy;
+    private bool regenerating;
+    private bool copyFeedback;
+    private int copyFeedbackId;
+    private string ShareUrl =>
+        playlist?.ShareToken is null
+            ? ""
+            : $"{Nav.BaseUri.TrimEnd('/')}/share/{playlist.ShareToken}";
 
     private const long MaxCoverBytes = 5 * 1024 * 1024;
     private static readonly string[] AllowedCoverExtensions = [".jpg", ".jpeg", ".png", ".webp"];
@@ -338,6 +376,77 @@
     {
         if (e.Key == "Enter" && !e.ShiftKey)
             await SendRefinement();
+    }
+
+    private async Task ToggleShare()
+    {
+        if (playlist is null || sharingBusy) return;
+        sharingBusy = true;
+
+        if (playlist.IsShared)
+        {
+            await PlaylistService.DisableSharingAsync(playlist.Id, currentUserId);
+            playlist.IsShared = false;
+            copyFeedback = false;
+            copyFeedbackId++;
+            sharingBusy = false;
+        }
+        else
+        {
+            var token = await PlaylistService.EnableSharingAsync(playlist.Id, currentUserId);
+            if (!string.IsNullOrEmpty(token))
+            {
+                playlist.ShareToken = token;
+                playlist.IsShared   = true;
+            }
+            sharingBusy = false;
+        }
+    }
+
+    private async Task CopyShareLink()
+    {
+        if (string.IsNullOrEmpty(ShareUrl)) return;
+        var copyTask = JS.InvokeVoidAsync("navigator.clipboard.writeText", ShareUrl).AsTask();
+        await ((Task)copyTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        var id = ++copyFeedbackId;
+        copyFeedback = true;
+        _ = ResetCopyFeedbackAfterDelay(id);
+    }
+
+    private async Task ResetCopyFeedbackAfterDelay(int id)
+    {
+        await Task.Delay(2000);
+        if (id != copyFeedbackId) return;
+        copyFeedback = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Regenerate()
+    {
+        if (playlist is null || currentUser is null || regenerating || Generation.IsGenerating) return;
+        regenerating = true;
+
+        var session = await PlaylistService.GetOriginalSessionAsync(playlist.Id, currentUserId);
+        if (session is null)
+        {
+            regenerating = false;
+            return;
+        }
+
+        Generation.Reset();
+        Nav.NavigateTo("/");
+
+        _ = Generation.GenerateAsync(
+            currentUser,
+            session.PromptText,
+            session.SelectedMood,
+            session.SelectedGenres,
+            session.EnergyLevel,
+            session.Danceability,
+            null,
+            null);
+
+        regenerating = false;
     }
 
     public void Dispose()

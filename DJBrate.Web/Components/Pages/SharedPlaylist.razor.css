@@ -1,0 +1,263 @@
+.page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem 7rem;
+    color: #e0e0e0;
+}
+
+.muted {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.shared-eyebrow {
+    color: #888;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.shared-link {
+    color: #1db954;
+    text-decoration: none;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+    transition: color 0.15s;
+}
+
+.shared-link:hover {
+    color: #1ed760;
+}
+
+.not-shared {
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 12px;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+.not-shared-title {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.not-shared-detail {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem;
+    max-width: 32rem;
+}
+
+.not-shared .btn-primary {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.playlist-header {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+    margin: 0.5rem 0 1.25rem;
+}
+
+.playlist-header-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-header-text h1 {
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.35rem;
+}
+
+.playlist-cover {
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #1a1a1a;
+    display: block;
+}
+
+.playlist-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.playlist-cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    font-size: 3rem;
+}
+
+.detail-body {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 1.5rem;
+    align-items: start;
+    margin-top: 0.5rem;
+}
+
+.detail-tracks {
+    min-width: 0;
+}
+
+.track-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.track-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 0.7rem 0.95rem;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s, transform 0.15s, background 0.15s;
+}
+
+.track-row:hover,
+.track-row:focus-visible {
+    border-color: #2e2e2e;
+    background: #181818;
+    transform: scale(1.015);
+    outline: none;
+}
+
+.track-row.is-playing-row {
+    border-color: #1db954;
+    background: #181818;
+}
+
+.track-position {
+    color: #555;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 1.5rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.track-art {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #1a1a1a;
+}
+
+.track-art-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #444;
+    font-size: 1.2rem;
+}
+
+.track-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.track-name {
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.track-artist {
+    color: #888;
+    font-size: 0.78rem;
+    margin-top: 0.15rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.open-spotify {
+    display: inline-block;
+    margin-top: 1rem;
+    background: #1db954;
+    color: #000;
+    text-decoration: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: background 0.15s;
+}
+
+.open-spotify:hover {
+    background: #1ed760;
+}
+
+.conversation {
+    position: sticky;
+    top: 1.5rem;
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 12px;
+    padding: 1.25rem;
+    max-height: calc(100vh - 160px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.conversation h2 {
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #1f1f1f;
+    flex-shrink: 0;
+}
+
+.conversation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+@media (max-width: 860px) {
+    .detail-body {
+        grid-template-columns: 1fr;
+    }
+
+    .conversation {
+        position: static;
+        max-height: none;
+    }
+}

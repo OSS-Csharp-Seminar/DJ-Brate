@@ -39,6 +39,13 @@ public class Playlist
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    [Column("share_token")]
+    public string? ShareToken { get; set; }
+
+    [Required]
+    [Column("is_shared")]
+    public bool IsShared { get; set; } = false;
+
     public MoodSession MoodSession { get; set; } = null!;
     public User User { get; set; } = null!;
     public ICollection<PlaylistTrack> PlaylistTracks { get; set; } = new List<PlaylistTrack>();
