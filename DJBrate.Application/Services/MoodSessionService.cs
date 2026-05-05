@@ -121,6 +121,7 @@ public class MoodSessionService : IMoodSessionService
                 Tempo           = result.AudioFeatures.Tempo,
                 Danceability    = result.AudioFeatures.Danceability,
                 Acousticness    = result.AudioFeatures.Acousticness,
+                AiNote          = t.AiNote,
                 Position        = i + 1
             }).ToList()
         };

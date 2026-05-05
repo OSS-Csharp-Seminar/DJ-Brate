@@ -57,6 +57,9 @@ public class SpotifyTrack
 
     [JsonPropertyName("album")]
     public SpotifyAlbum Album { get; set; } = null!;
+
+    [JsonIgnore]
+    public string? AiNote { get; set; }
 }
 
 public class SpotifyArtistRef

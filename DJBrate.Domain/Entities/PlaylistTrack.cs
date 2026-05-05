@@ -61,6 +61,9 @@ public class PlaylistTrack
     [Column("position")]
     public int Position { get; set; }
 
+    [Column("ai_note")]
+    public string? AiNote { get; set; }
+
     public Playlist Playlist { get; set; } = null!;
     public ICollection<TrackFeedback> TrackFeedbacks { get; set; } = new List<TrackFeedback>();
 }

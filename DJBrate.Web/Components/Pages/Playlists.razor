@@ -36,32 +36,71 @@
         }
         else
         {
-            <div class="playlist-grid">
-                @foreach (var p in playlists)
+            <div class="filter-bar">
+                <div class="filter-search-wrap">
+                    <input class="filter-search"
+                           type="search"
+                           placeholder="Search playlists…"
+                           @bind="searchText"
+                           @bind:event="oninput" />
+                </div>
+                <select class="filter-select" @bind="selectedMood">
+                    <option value="">All moods</option>
+                    @foreach (var mood in AvailableMoods)
+                    {
+                        <option value="@mood">@mood</option>
+                    }
+                </select>
+                <select class="filter-select" @bind="selectedPeriod">
+                    <option value="all">All time</option>
+                    <option value="week">Last 7 days</option>
+                    <option value="month">Last 30 days</option>
+                    <option value="3months">Last 3 months</option>
+                    <option value="year">This year</option>
+                </select>
+                @if (IsFiltered)
                 {
-                    <a class="playlist-card" href="@($"/playlists/{p.Id}")">
-                        @if (!string.IsNullOrEmpty(p.ImageUrl))
-                        {
-                            <img src="@p.ImageUrl" alt="" class="playlist-card-cover" loading="lazy" />
-                        }
-                        else
-                        {
-                            <div class="playlist-card-cover playlist-card-cover-placeholder">&#9835;</div>
-                        }
-                        <div class="playlist-card-text">
-                            <div class="playlist-card-name">@p.Name</div>
-                            @if (!string.IsNullOrWhiteSpace(p.Description))
-                            {
-                                <div class="playlist-card-desc">@p.Description</div>
-                            }
-                            <div class="playlist-card-meta">
-                                <span>@p.TrackCount tracks</span>
-                                <span>@p.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
-                            </div>
-                        </div>
-                    </a>
+                    <button class="filter-clear" @onclick="ClearFilters">Clear</button>
                 }
             </div>
+
+            @if (!FilteredPlaylists.Any())
+            {
+                <p class="muted filter-empty">No playlists match your filters.</p>
+            }
+            else
+            {
+                <div class="playlist-grid">
+                    @foreach (var p in FilteredPlaylists)
+                    {
+                        <a class="playlist-card" href="@($"/playlists/{p.Id}")">
+                            @if (!string.IsNullOrEmpty(p.ImageUrl))
+                            {
+                                <img src="@p.ImageUrl" alt="" class="playlist-card-cover" loading="lazy" />
+                            }
+                            else
+                            {
+                                <div class="playlist-card-cover playlist-card-cover-placeholder">&#9835;</div>
+                            }
+                            <div class="playlist-card-text">
+                                <div class="playlist-card-name">@p.Name</div>
+                                @if (!string.IsNullOrWhiteSpace(p.Description))
+                                {
+                                    <div class="playlist-card-desc">@p.Description</div>
+                                }
+                                <div class="playlist-card-meta">
+                                    <span>@p.TrackCount tracks</span>
+                                    @if (!string.IsNullOrEmpty(p.MoodSession?.SelectedMood))
+                                    {
+                                        <span class="playlist-card-mood">@p.MoodSession.SelectedMood</span>
+                                    }
+                                    <span>@p.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</span>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
         }
     }
     else if (playlist is null)
@@ -151,6 +190,20 @@
                                 <div class="track-name">@track.TrackName</div>
                                 <div class="track-artist">@track.ArtistName</div>
                             </div>
+                            @if (!string.IsNullOrEmpty(track.AiNote))
+                            {
+                                <div class="track-note-wrap" @onclick:stopPropagation="true">
+                                    <button class="track-note-btn @(expandedNoteId == track.Id ? "track-note-btn-active" : "")"
+                                            aria-label="Why this track?"
+                                            @onclick="() => ToggleNote(track.Id)">
+                                        &#9432;
+                                    </button>
+                                    @if (expandedNoteId == track.Id)
+                                    {
+                                        <div class="track-note-bubble">@track.AiNote</div>
+                                    }
+                                </div>
+                            }
                             <div class="track-feedback">
                                 <button class="feedback-btn @(feedback.GetValueOrDefault(track.Id) == FeedbackTypes.Like ? "feedback-active-like" : "")"
                                         aria-label="Like"
@@ -221,6 +274,9 @@
 
     private List<Playlist>? playlists;
     private Playlist? playlist;
+    private string searchText   = "";
+    private string selectedMood = "";
+    private string selectedPeriod = "all";
     private List<AiConversationMessage> conversation = [];
     private Guid? loadedId;
     private Guid currentUserId;
@@ -233,11 +289,57 @@
     private bool sharingBusy;
     private bool regenerating;
     private bool copyFeedback;
+    private Guid? expandedNoteId;
     private int copyFeedbackId;
     private string ShareUrl =>
         playlist?.ShareToken is null
             ? ""
             : $"{Nav.BaseUri.TrimEnd('/')}/share/{playlist.ShareToken}";
+
+    private bool IsFiltered =>
+        !string.IsNullOrWhiteSpace(searchText) || !string.IsNullOrEmpty(selectedMood) || selectedPeriod != "all";
+
+    private IEnumerable<string> AvailableMoods =>
+        playlists is null
+            ? []
+            : playlists
+                .Where(p => !string.IsNullOrEmpty(p.MoodSession?.SelectedMood))
+                .Select(p => p.MoodSession!.SelectedMood!)
+                .Distinct()
+                .OrderBy(m => m);
+
+    private IEnumerable<Playlist> FilteredPlaylists
+    {
+        get
+        {
+            if (playlists is null) return [];
+            var result = playlists.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(searchText))
+                result = result.Where(p => p.Name.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(selectedMood))
+                result = result.Where(p => p.MoodSession?.SelectedMood == selectedMood);
+            if (selectedPeriod != "all")
+            {
+                var cutoff = selectedPeriod switch
+                {
+                    "week"    => DateTime.UtcNow.AddDays(-7),
+                    "month"   => DateTime.UtcNow.AddDays(-30),
+                    "3months" => DateTime.UtcNow.AddMonths(-3),
+                    "year"    => DateTime.UtcNow.AddYears(-1),
+                    _         => DateTime.MinValue,
+                };
+                result = result.Where(p => p.CreatedAt >= cutoff);
+            }
+            return result;
+        }
+    }
+
+    private void ClearFilters()
+    {
+        searchText    = "";
+        selectedMood  = "";
+        selectedPeriod = "all";
+    }
 
     private const long MaxCoverBytes = 5 * 1024 * 1024;
     private static readonly string[] AllowedCoverExtensions = [".jpg", ".jpeg", ".png", ".webp"];
@@ -289,6 +391,9 @@
             coverError = null;
         }
     }
+
+    private void ToggleNote(Guid trackId)
+        => expandedNoteId = expandedNoteId == trackId ? null : trackId;
 
     private async Task ToggleFeedback(PlaylistTrack track, string feedbackType)
     {

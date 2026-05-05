@@ -1,30 +1,427 @@
 @page "/admin"
 @attribute [Authorize(Roles = "admin")]
-@rendermode InteractiveServer
+@using System.Security.Claims
+@using DJBrate.Application.Interfaces
+@using DJBrate.Application.Models.Admin
+@using DJBrate.Application.Models.Spotify
+@using DJBrate.Domain.Entities
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IAdminService AdminService
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>DJ Brate — Admin</PageTitle>
+<PageTitle>Admin — DJ Brate</PageTitle>
 
-<div class="admin-wrapper">
-    <div class="admin-header">
-        <h1>Admin Panel</h1>
-        <p>Manage users, playlists, and system settings.</p>
-    </div>
+<div class="page">
+    <h1>Admin</h1>
 
-    <div class="admin-cards">
-        <div class="admin-card">
-            <span class="admin-card-icon">👤</span>
-            <h3>Users</h3>
-            <p>Coming soon</p>
+    @if (!loaded)
+    {
+        <p class="muted">Loading...</p>
+    }
+    else
+    {
+        <div class="stat-grid">
+            <div class="stat-card">
+                <p class="stat-label">Users</p>
+                <p class="stat-value">@agg!.TotalUsers</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Playlists</p>
+                <p class="stat-value">@agg.TotalPlaylists</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Sessions</p>
+                <p class="stat-value">@agg.TotalSessions</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Likes / Skips</p>
+                <p class="stat-value">@agg.LikeCount <span class="stat-sep">/</span> @agg.SkipCount</p>
+            </div>
         </div>
-        <div class="admin-card">
-            <span class="admin-card-icon">🎵</span>
-            <h3>Playlists</h3>
-            <p>Coming soon</p>
+
+        <section class="admin-section">
+            <h2>Users (@users.Count)</h2>
+            @if (users.Count == 0)
+            {
+                <p class="muted">No users.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Spotify</th>
+                                <th>Last login</th>
+                                <th>Playlists</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in users)
+                            {
+                                <tr>
+                                    <td>@u.DisplayName</td>
+                                    <td class="cell-muted">@u.Email</td>
+                                    <td>
+                                        <span class="role-badge @(u.Role == SpotifyConstants.AdminRole ? "role-admin" : "role-user")">
+                                            @u.Role
+                                        </span>
+                                    </td>
+                                    <td class="cell-check">@(u.HasSpotify ? "✓" : "—")</td>
+                                    <td class="cell-muted">@(u.LastLoginAt.HasValue ? u.LastLoginAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "—")</td>
+                                    <td>@u.PlaylistCount</td>
+                                    <td class="cell-actions">
+                                        @if (u.Id != currentUserId)
+                                        {
+                                            @if (u.Role == SpotifyConstants.AdminRole)
+                                            {
+                                                <button class="action-btn action-btn-ghost"
+                                                        @onclick="() => SetRole(u.Id, SpotifyConstants.DefaultUserRole)"
+                                                        disabled="@(busyUserId == u.Id)">
+                                                    Revoke admin
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="action-btn action-btn-green"
+                                                        @onclick="() => SetRole(u.Id, SpotifyConstants.AdminRole)"
+                                                        disabled="@(busyUserId == u.Id)">
+                                                    Make admin
+                                                </button>
+                                            }
+
+                                            @if (pendingDeleteId == u.Id)
+                                            {
+                                                <button class="action-btn action-btn-red"
+                                                        @onclick="() => ConfirmDelete(u.Id)"
+                                                        disabled="@(busyUserId == u.Id)">
+                                                    Confirm
+                                                </button>
+                                                <button class="action-btn action-btn-ghost"
+                                                        @onclick="CancelDelete">
+                                                    Cancel
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="action-btn action-btn-red-ghost"
+                                                        @onclick="() => InitiateDelete(u.Id)"
+                                                        disabled="@(busyUserId == u.Id)">
+                                                    Delete
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="cell-muted">you</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="admin-section">
+            <h2>Recent playlists</h2>
+            @if (playlists.Count == 0)
+            {
+                <p class="muted">No playlists.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>User</th>
+                                <th>Tracks</th>
+                                <th>Created</th>
+                                <th>Shared</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in playlists)
+                            {
+                                <tr>
+                                    <td><a class="table-link" href="/playlists/@p.Id">@p.Name</a></td>
+                                    <td class="cell-muted">@p.UserDisplayName</td>
+                                    <td>@p.TrackCount</td>
+                                    <td class="cell-muted">@p.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="cell-check">@(p.IsShared ? "✓" : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="admin-section">
+            <h2>Failed sessions (@failedSessions.Count)</h2>
+            @if (failedSessions.Count == 0)
+            {
+                <p class="muted">No failed sessions — all good.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Prompt</th>
+                                <th>Type</th>
+                                <th>Time</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in failedSessions)
+                            {
+                                <tr>
+                                    <td>@s.UserDisplayName</td>
+                                    <td class="cell-muted cell-truncate" title="@s.PromptText">@TruncatePrompt(s.PromptText)</td>
+                                    <td class="cell-muted">@s.SessionType</td>
+                                    <td class="cell-muted">@s.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td class="cell-muted">@(s.DurationSeconds.HasValue ? $"{s.DurationSeconds.Value:0.0}s" : "—")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="admin-section">
+            <h2>Recent tool calls</h2>
+            @if (toolCalls.Count == 0)
+            {
+                <p class="muted">No tool calls recorded yet.</p>
+            }
+            else
+            {
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Tool</th>
+                                <th>User</th>
+                                <th>Success</th>
+                                <th>ms</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in toolCalls)
+                            {
+                                <tr>
+                                    <td class="cell-mono">@t.ToolName</td>
+                                    <td class="cell-muted">@t.UserDisplayName</td>
+                                    <td class="@(t.Success ? "cell-check" : "cell-fail")">@(t.Success ? "✓" : "✗")</td>
+                                    <td class="cell-muted">@(t.DurationMs.HasValue ? t.DurationMs.Value.ToString() : "—")</td>
+                                    <td class="cell-muted">@t.CalledAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <div class="two-col">
+            <section class="admin-section">
+                <h2>Global mood breakdown</h2>
+                @if (globalMoods.Count == 0)
+                {
+                    <p class="muted">No mood data yet.</p>
+                }
+                else
+                {
+                    <div class="bar-list">
+                        @foreach (var m in globalMoods)
+                        {
+                            <div class="bar-row">
+                                <span class="bar-label">@m.Mood</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="width:@(MoodPercent(m.Count))%"></div>
+                                </div>
+                                <span class="bar-val">@m.Count</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </section>
+
+            <section class="admin-section">
+                <h2>Global genre breakdown</h2>
+                @if (globalGenres.Count == 0)
+                {
+                    <p class="muted">No genre data yet.</p>
+                }
+                else
+                {
+                    <div class="tag-cloud">
+                        @foreach (var g in globalGenres)
+                        {
+                            <span class="genre-tag">@g.Genre <span class="genre-count">@g.Count</span></span>
+                        }
+                    </div>
+                }
+            </section>
         </div>
-        <div class="admin-card">
-            <span class="admin-card-icon">⚙️</span>
-            <h3>Settings</h3>
-            <p>Coming soon</p>
-        </div>
-    </div>
+
+        <section class="admin-section">
+            <h2>AI model config</h2>
+            @if (configId == Guid.Empty)
+            {
+                <p class="muted">No active config found.</p>
+            }
+            else
+            {
+                <div class="config-form">
+                    <div class="form-row">
+                        <label class="form-label">Model name</label>
+                        <input class="form-input" @bind="editModelName" />
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Temperature</label>
+                        <input class="form-input form-input-sm" type="number" step="0.1" min="0" max="2" @bind="editTemperature" />
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Max tokens</label>
+                        <input class="form-input form-input-sm" type="number" min="100" max="32000" @bind="editMaxTokens" />
+                    </div>
+                    <div class="form-row form-row-col">
+                        <label class="form-label">System prompt</label>
+                        <textarea class="form-textarea" rows="8" @bind="editSystemPrompt"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn-save" @onclick="SaveConfig" disabled="@saving">
+                            @(saving ? "Saving..." : "Save")
+                        </button>
+                        @if (configSaved)
+                        {
+                            <span class="save-ok">Saved!</span>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    }
 </div>
+
+@code {
+    private bool loaded;
+    private Guid currentUserId;
+    private AdminAggregateStats? agg;
+    private List<AdminUserRow> users = [];
+    private List<AdminPlaylistRow> playlists = [];
+    private List<AdminFailedSessionRow> failedSessions = [];
+    private List<AdminToolCallRow> toolCalls = [];
+    private List<AdminMoodCount> globalMoods = [];
+    private List<AdminGenreCount> globalGenres = [];
+
+    private Guid configId;
+    private string editModelName = "";
+    private float? editTemperature;
+    private int? editMaxTokens;
+    private string editSystemPrompt = "";
+    private bool saving;
+    private bool configSaved;
+    private int saveId;
+
+    private Guid? pendingDeleteId;
+    private Guid? busyUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        Guid.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out currentUserId);
+
+        agg           = await AdminService.GetAggregateStatsAsync();
+        users         = await AdminService.GetAllUsersAsync();
+        playlists     = await AdminService.GetRecentPlaylistsAsync();
+        failedSessions = await AdminService.GetFailedSessionsAsync();
+        toolCalls     = await AdminService.GetRecentToolCallsAsync();
+        globalMoods   = await AdminService.GetGlobalMoodBreakdownAsync();
+        globalGenres  = await AdminService.GetGlobalGenreBreakdownAsync();
+
+        var config = await AdminService.GetActiveConfigAsync();
+        if (config is not null)
+        {
+            configId         = config.Id;
+            editModelName    = config.ModelName;
+            editTemperature  = config.Temperature;
+            editMaxTokens    = config.MaxTokens;
+            editSystemPrompt = config.SystemPrompt;
+        }
+
+        loaded = true;
+    }
+
+    private async Task SetRole(Guid userId, string role)
+    {
+        busyUserId = userId;
+        await AdminService.SetUserRoleAsync(userId, role);
+        users = await AdminService.GetAllUsersAsync();
+        busyUserId = null;
+    }
+
+    private void InitiateDelete(Guid userId)
+    {
+        pendingDeleteId = userId;
+    }
+
+    private void CancelDelete()
+    {
+        pendingDeleteId = null;
+    }
+
+    private async Task ConfirmDelete(Guid userId)
+    {
+        busyUserId = userId;
+        pendingDeleteId = null;
+        await AdminService.DeleteUserAsync(userId);
+        users = await AdminService.GetAllUsersAsync();
+        agg   = await AdminService.GetAggregateStatsAsync();
+        busyUserId = null;
+    }
+
+    private async Task SaveConfig()
+    {
+        if (saving) return;
+        saving = true;
+        configSaved = false;
+        await AdminService.SaveConfigAsync(configId, editModelName, editTemperature, editMaxTokens, editSystemPrompt);
+        saving = false;
+        var id = ++saveId;
+        configSaved = true;
+        _ = ResetSaveFeedbackAfterDelay(id);
+    }
+
+    private async Task ResetSaveFeedbackAfterDelay(int id)
+    {
+        await Task.Delay(2000);
+        if (id != saveId) return;
+        configSaved = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private double MoodPercent(int count)
+    {
+        if (globalMoods.Count == 0) return 0;
+        var max = globalMoods.Max(m => m.Count);
+        return max == 0 ? 0 : (double)count / max * 100;
+    }
+
+    private static string TruncatePrompt(string? text)
+        => string.IsNullOrEmpty(text) ? "—" : text.Length > 70 ? text[..70] + "…" : text;
+}

@@ -48,8 +48,14 @@ public class AiMoodService : IAiMoodService
             "tracks": [
                 { "artist": "Artist Name", "title": "Track Title" },
                 { "artist": "Artist Name", "title": "Track Title" }
+            ],
+            "track_notes": [
+                { "artist": "Artist Name", "title": "Track Title", "note": "one sentence why this track fits" },
+                { "artist": "Artist Name", "title": "Track Title", "note": "one sentence why this track fits" }
             ]
         }
+
+        Rules for track_notes: provide one entry per track in the same order as the tracks array. Each note must be a single sentence explaining why that specific track was chosen — reference the mood, energy, era, or sub-genre relevance. Keep it concise.
 
         Rules for the tracks array:
         - Suggest real songs you are confident exist on Spotify.
@@ -362,7 +368,8 @@ public class AiMoodService : IAiMoodService
             AiReasoning       = reasoning
         });
 
-        var tracks = await ResolveTracksAsync(user, root);
+        var trackNotes = ParseTrackNotes(root);
+        var tracks = await ResolveTracksAsync(user, root, trackNotes);
 
         return new AiMoodResult
         {
@@ -375,7 +382,24 @@ public class AiMoodService : IAiMoodService
         };
     }
 
-    private async Task<List<SpotifyTrack>> ResolveTracksAsync(User user, JsonElement root)
+    private static Dictionary<string, string> ParseTrackNotes(JsonElement root)
+    {
+        var notes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (!root.TryGetProperty("track_notes", out var notesEl) || notesEl.ValueKind != JsonValueKind.Array)
+            return notes;
+
+        foreach (var item in notesEl.EnumerateArray())
+        {
+            var artist = item.TryGetProperty("artist", out var a) ? a.GetString() : null;
+            var title  = item.TryGetProperty("title",  out var t) ? t.GetString() : null;
+            var note   = item.TryGetProperty("note",   out var n) ? n.GetString() : null;
+            if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(note))
+                notes[$"{artist}|{title}"] = note;
+        }
+        return notes;
+    }
+
+    private async Task<List<SpotifyTrack>> ResolveTracksAsync(User user, JsonElement root, Dictionary<string, string> trackNotes)
     {
         if (!root.TryGetProperty("tracks", out var tracksElement) || tracksElement.ValueKind != JsonValueKind.Array)
             return [];
@@ -392,8 +416,13 @@ public class AiMoodService : IAiMoodService
                 continue;
 
             var match = await _spotifyClient.SearchTrackAsync(accessToken, artist, title);
-            if (match is not null && seenIds.Add(match.Id))
-                resolved.Add(match);
+            if (match is null || !seenIds.Add(match.Id))
+                continue;
+
+            if (trackNotes.TryGetValue($"{artist}|{title}", out var note))
+                match.AiNote = note;
+
+            resolved.Add(match);
         }
 
         return resolved;

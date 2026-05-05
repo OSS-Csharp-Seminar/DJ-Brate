@@ -11,6 +11,7 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
 
     public async Task<IEnumerable<Playlist>> GetByUserIdAsync(Guid userId)
         => await _dbSet
+            .Include(p => p.MoodSession)
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
@@ -39,7 +40,6 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
 
         await _context.SaveChangesAsync();
 
-        // reorder positions
         var remaining = await _context.Set<PlaylistTrack>()
             .Where(t => t.PlaylistId == playlistId)
             .OrderBy(t => t.Position)

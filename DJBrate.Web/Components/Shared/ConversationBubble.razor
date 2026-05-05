@@ -4,7 +4,6 @@
 
 @if (Message.Role == AiMessageRoles.Function)
 {
-    @* function role is internal noise — never rendered *@
 }
 else if (Message.Role == AiMessageRoles.Assistant && Message.Content.StartsWith("[tool_call:"))
 {

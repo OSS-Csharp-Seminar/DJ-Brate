@@ -1,6 +1,7 @@
 @page "/statistics"
 @attribute [Authorize]
 @using System.Security.Claims
+@using System.Globalization
 @using DJBrate.Application.Interfaces
 @using DJBrate.Application.Models.Spotify
 @using DJBrate.Application.Models.Stats
@@ -53,6 +54,21 @@
                 <p class="stat-value">@stats.SkipCount</p>
                 <p class="stat-sub">tracks you skipped</p>
             </div>
+            <div class="stat-card">
+                <p class="stat-label">Like ratio</p>
+                <p class="stat-value">@FeedbackRatioPercent<span class="stat-unit">%</span></p>
+                <p class="stat-sub">of all feedback</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Favourite mood</p>
+                <p class="stat-value stat-value-sm">@FavouriteMood</p>
+                <p class="stat-sub">most generated</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">AI tool calls</p>
+                <p class="stat-value">@TotalAiCalls</p>
+                <p class="stat-sub">total invocations</p>
+            </div>
         </div>
 
         <section class="stat-section">
@@ -64,19 +80,33 @@
             else
             {
                 <div class="sparkline-wrap">
-                    <svg viewBox="0 0 @SparklineWidth @SparklineHeight"
-                         preserveAspectRatio="none"
-                         class="sparkline"
-                         role="img"
-                         aria-label="Playlists per day">
-                        <polyline points="@SparklinePoints" />
-                        @foreach (var dot in SparklineDots)
+                    <div class="sparkline-container">
+                        <svg viewBox="0 0 @SparklineWidth @SparklineHeight"
+                             preserveAspectRatio="none"
+                             class="sparkline"
+                             role="img"
+                             aria-label="Playlists per day"
+                             @onmouseleave="() => hoveredDot = null">
+                            <polyline points="@SparklinePoints" />
+                            @foreach (var dot in SparklineDots)
+                            {
+                                var d = dot;
+                                <circle cx="@d.X.ToString("0.##", CultureInfo.InvariantCulture)"
+                                        cy="@d.Y.ToString("0.##", CultureInfo.InvariantCulture)"
+                                        r="5"
+                                        class="spark-dot @(hoveredDot?.Date == d.Date ? "spark-dot-active" : "")"
+                                        @onmouseenter="() => hoveredDot = d" />
+                            }
+                        </svg>
+                        @if (hoveredDot.HasValue)
                         {
-                            <circle cx="@dot.X" cy="@dot.Y" r="3.5">
-                                <title>@dot.Date.ToString("MMM d") — @dot.Count @(dot.Count == 1 ? "playlist" : "playlists")</title>
-                            </circle>
+                            var leftPct = hoveredDot.Value.X / SparklineWidth * 100;
+                            <div class="spark-tooltip" style="left:clamp(30px, @leftPct.ToString("0.##", CultureInfo.InvariantCulture)%, calc(100% - 30px))">
+                                <span class="spark-tooltip-date">@hoveredDot.Value.Date.ToString("MMM d")</span>
+                                <span class="spark-tooltip-val">@hoveredDot.Value.Count @(hoveredDot.Value.Count == 1 ? "playlist" : "playlists")</span>
+                            </div>
                         }
-                    </svg>
+                    </div>
                     <div class="sparkline-axis">
                         <span>@SparklineFromLabel</span>
                         <span>@SparklinePeakLabel</span>
@@ -169,6 +199,102 @@
         </section>
 
         <section class="stat-section">
+            <h2>Top artists</h2>
+            @if (TotalTopArtists == 0)
+            {
+                <p class="muted">No top artists synced yet.</p>
+            }
+            else
+            {
+                <div class="tabs">
+                    @foreach (var (key, label) in TimeRangeTabs)
+                    {
+                        <button type="button"
+                                class="tab @(selectedArtistRange == key ? "tab-active" : "")"
+                                @onclick="() => selectedArtistRange = key">
+                            @label
+                        </button>
+                    }
+                </div>
+                @if (CurrentTopArtists.Count == 0)
+                {
+                    <p class="muted">No artists for this range.</p>
+                }
+                else
+                {
+                    <ol class="ranked-list">
+                        @foreach (var a in CurrentTopArtists)
+                        {
+                            <li class="ranked-row">
+                                <span class="rank-pos">@a.Rank</span>
+                                <div class="rank-info">
+                                    <div class="rank-name">@a.ArtistName</div>
+                                    @if (a.Genres.Count > 0)
+                                    {
+                                        <div class="rank-genres">
+                                            @foreach (var g in a.Genres.Take(3))
+                                            {
+                                                <span class="rank-genre-tag">@g</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ol>
+                }
+            }
+        </section>
+
+        <section class="stat-section">
+            <h2>Mood timeline <span class="section-sub">last 90 days</span></h2>
+            @if (stats.MoodTimeline.Count == 0)
+            {
+                <p class="muted">No mood data yet — generate a few playlists to see your timeline.</p>
+            }
+            else
+            {
+                <div class="cal-grid">
+                    @foreach (var (label, days) in CalendarMonths)
+                    {
+                        <div class="cal-month">
+                            <div class="cal-month-label">@label</div>
+                            <div class="cal-dow-row">
+                                @foreach (var dn in new[] { "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" })
+                                {
+                                    <span>@dn</span>
+                                }
+                            </div>
+                            <div class="cal-days">
+                                @foreach (var day in days)
+                                {
+                                    @if (day.IsCurrentMonth)
+                                    {
+                                        <div class="cal-day @(day.PrimaryMood != null ? "cal-day-mood" : "")"
+                                             style="@(day.PrimaryMood != null ? $"--mood-color:{MoodColor(day.PrimaryMood)}" : "")">
+                                            <span>@day.Date.Day</span>
+                                            @if (day.PrimaryMood != null)
+                                            {
+                                                <div class="cal-tooltip">
+                                                    <span class="cal-tooltip-date">@day.Date.ToString("MMM d")</span>
+                                                    <span class="cal-tooltip-mood">@string.Join(", ", day.AllMoods)</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="cal-day cal-day-pad"></div>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="stat-section">
             <h2>AI tool usage</h2>
             @if (stats.ToolUsage.Count == 0)
             {
@@ -199,8 +325,8 @@
 </div>
 
 @code {
-    private const int SparklineWidth = 600;
-    private const int SparklineHeight = 80;
+    private const int SparklineWidth   = 600;
+    private const int SparklineHeight  = 80;
     private const int SparklinePadding = 6;
 
     private static readonly (string Key, string Label)[] TimeRangeTabs =
@@ -211,12 +337,25 @@
     ];
 
     private UserStatsDto? stats;
-    private string selectedRange = SpotifyTimeRange.MediumTerm.ToApiString();
+    private string selectedRange       = SpotifyTimeRange.MediumTerm.ToApiString();
+    private string selectedArtistRange = SpotifyTimeRange.MediumTerm.ToApiString();
+    private (double X, double Y, DateOnly Date, int Count)? hoveredDot;
 
     private double SuccessRatePercent =>
         stats is null || stats.TotalSessions == 0
             ? 0
             : (double)stats.CompletedSessions / stats.TotalSessions * 100;
+
+    private int FeedbackRatioPercent =>
+        stats is null || (stats.LikeCount + stats.SkipCount) == 0
+            ? 0
+            : stats.LikeCount * 100 / (stats.LikeCount + stats.SkipCount);
+
+    private string FavouriteMood =>
+        stats?.MoodBreakdown.FirstOrDefault()?.Mood ?? "—";
+
+    private int TotalAiCalls =>
+        stats?.ToolUsage.Sum(t => t.CallCount) ?? 0;
 
     private int TotalTopTracks =>
         stats?.TopTracksByRange.Values.Sum(v => v.Count) ?? 0;
@@ -225,6 +364,52 @@
         stats is not null && stats.TopTracksByRange.TryGetValue(selectedRange, out var list)
             ? list
             : [];
+
+    private int TotalTopArtists =>
+        stats?.TopArtistsByRange.Values.Sum(v => v.Count) ?? 0;
+
+    private List<TopArtistEntry> CurrentTopArtists =>
+        stats is not null && stats.TopArtistsByRange.TryGetValue(selectedArtistRange, out var al)
+            ? al
+            : [];
+
+    private record CalendarDay(DateOnly Date, bool IsCurrentMonth, string? PrimaryMood, List<string> AllMoods);
+
+    private IEnumerable<(string Label, List<CalendarDay> Days)> CalendarMonths
+    {
+        get
+        {
+            if (stats is null || stats.MoodTimeline.Count == 0) yield break;
+
+            var moodByDate = stats.MoodTimeline
+                .GroupBy(e => e.Date)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.Mood).ToList());
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            for (var offset = -2; offset <= 0; offset++)
+            {
+                var target = new DateOnly(today.Year, today.Month, 1).AddMonths(offset);
+                var daysInMonth = DateTime.DaysInMonth(target.Year, target.Month);
+                var firstDay = new DateOnly(target.Year, target.Month, 1);
+                var dow = (int)firstDay.DayOfWeek;
+                var padding = dow == 0 ? 6 : dow - 1;
+
+                var days = new List<CalendarDay>();
+                for (var p = padding; p > 0; p--)
+                    days.Add(new CalendarDay(firstDay.AddDays(-p), false, null, []));
+
+                for (var d = 1; d <= daysInMonth; d++)
+                {
+                    var date = new DateOnly(target.Year, target.Month, d);
+                    var moods = moodByDate.TryGetValue(date, out var m) ? m : [];
+                    days.Add(new CalendarDay(date, true, moods.FirstOrDefault(), moods));
+                }
+
+                yield return (target.ToString("MMMM yyyy"), days);
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -241,21 +426,29 @@
         return max == 0 ? 0 : (double)count / max * 100;
     }
 
+    private static readonly string[] MoodPalette =
+    [
+        "#1db954", "#e05c5c", "#f0a500", "#5c9ee0", "#a55ce0",
+        "#e05ca8", "#5ce0d8", "#e0c45c", "#8ae05c", "#e08a5c"
+    ];
+
+    private static string MoodColor(string mood)
+        => MoodPalette[Math.Abs(mood.GetHashCode()) % MoodPalette.Length];
+
     private string SparklinePoints
     {
         get
         {
             if (stats is null || stats.Last30Days.Count == 0) return "";
-            var max = Math.Max(1, stats.Last30Days.Max(d => d.Count));
-            var n = stats.Last30Days.Count;
-            var span = SparklineWidth - SparklinePadding * 2;
+            var max    = Math.Max(1, stats.Last30Days.Max(d => d.Count));
+            var n      = stats.Last30Days.Count;
+            var span   = SparklineWidth - SparklinePadding * 2;
             var height = SparklineHeight - SparklinePadding * 2;
-
             return string.Join(" ", stats.Last30Days.Select((d, i) =>
             {
                 var x = n == 1 ? SparklineWidth / 2.0 : SparklinePadding + (double)i / (n - 1) * span;
                 var y = SparklinePadding + (1 - (double)d.Count / max) * height;
-                return $"{x.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)},{y.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}";
+                return $"{x.ToString("0.##", CultureInfo.InvariantCulture)},{y.ToString("0.##", CultureInfo.InvariantCulture)}";
             }));
         }
     }
@@ -265,11 +458,10 @@
         get
         {
             if (stats is null || stats.Last30Days.Count == 0) yield break;
-            var max = Math.Max(1, stats.Last30Days.Max(d => d.Count));
-            var n = stats.Last30Days.Count;
-            var span = SparklineWidth - SparklinePadding * 2;
+            var max    = Math.Max(1, stats.Last30Days.Max(d => d.Count));
+            var n      = stats.Last30Days.Count;
+            var span   = SparklineWidth - SparklinePadding * 2;
             var height = SparklineHeight - SparklinePadding * 2;
-
             for (var i = 0; i < n; i++)
             {
                 var d = stats.Last30Days[i];

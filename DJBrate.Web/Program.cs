@@ -76,6 +76,7 @@ builder.Services.AddScoped<GenerationState>();
 builder.Services.AddScoped<RefinementState>();
 builder.Services.AddScoped<ITrackFeedbackService, TrackFeedbackService>();
 builder.Services.AddScoped<IListeningStatsService, ListeningStatsService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 var app = builder.Build();
 

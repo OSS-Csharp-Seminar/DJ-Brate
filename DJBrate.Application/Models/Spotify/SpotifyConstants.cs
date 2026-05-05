@@ -13,6 +13,7 @@ public static class SpotifyConstants
         "streaming user-read-playback-state user-modify-playback-state";
 
     public const string DefaultUserRole  = "user";
+    public const string AdminRole        = "admin";
     public const string PlaceholderEmailSuffix = "@spotify.placeholder";
 
     public const int TokenRefreshBufferMinutes = 5;
