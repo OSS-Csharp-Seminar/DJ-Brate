@@ -11,7 +11,7 @@ namespace DJBrate.Infrastructure.Ai;
 public class GeminiClient : IAiClient
 {
     private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta/models";
-    private const int MaxRetries = 3;
+    private const int MaxRetries = 5;
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _apiKey;
@@ -50,8 +50,15 @@ public class GeminiClient : IAiClient
             if (!IsTransientError(response.StatusCode))
                 break;
             if (attempt < MaxRetries - 1)
-                await Task.Delay(1000 * (attempt + 1));
+            {
+                var delay = GetRetryDelay(response, attempt);
+                await Task.Delay(delay);
+            }
         }
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            throw new InvalidOperationException(
+                "AI quota exceeded — the Gemini API rate limit was hit. Please wait a minute and try again.");
+
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadFromJsonAsync<JsonDocument>();
@@ -150,6 +157,22 @@ public class GeminiClient : IAiClient
             : element;
     }
 
+    private static TimeSpan GetRetryDelay(HttpResponseMessage response, int attempt)
+    {
+        if (response.Headers.RetryAfter?.Delta is { } delta && delta.TotalSeconds > 0)
+            return delta + TimeSpan.FromSeconds(1);
+
+        if (response.Headers.RetryAfter?.Date is { } date)
+        {
+            var wait = date - DateTimeOffset.UtcNow;
+            if (wait > TimeSpan.Zero)
+                return wait + TimeSpan.FromSeconds(1);
+        }
+
+        // exponential backoff: 2s, 4s, 8s, 16s
+        return TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
+    }
+
     private static bool IsTransientError(HttpStatusCode code) =>
         code is HttpStatusCode.TooManyRequests
             or HttpStatusCode.InternalServerError
@@ -159,18 +182,31 @@ public class GeminiClient : IAiClient
     private static AiResponse ParseResponse(JsonDocument doc)
     {
         var response = new AiResponse();
-        var candidates = doc.RootElement.GetProperty("candidates");
-        var parts = candidates[0].GetProperty("content").GetProperty("parts");
+
+        if (!doc.RootElement.TryGetProperty("candidates", out var candidates)
+            || candidates.GetArrayLength() == 0)
+            return response;
+
+        var candidate = candidates[0];
+
+        if (!candidate.TryGetProperty("content", out var content)
+            || !content.TryGetProperty("parts", out var parts))
+            return response;
 
         foreach (var part in parts.EnumerateArray())
         {
-            if (part.TryGetProperty("functionCall", out var fc))
+            if (part.TryGetProperty("functionCall", out var fc)
+                && fc.TryGetProperty("name", out var fcName))
             {
+                var name = fcName.GetString()!;
+                var argsRaw = fc.TryGetProperty("args", out var argsEl)
+                    ? argsEl.GetRawText()
+                    : "{}";
                 response.ToolCalls.Add(new AiToolCall
                 {
-                    Id        = fc.GetProperty("name").GetString()!,
-                    Name      = fc.GetProperty("name").GetString()!,
-                    Arguments = JsonDocument.Parse(fc.GetProperty("args").GetRawText())
+                    Id        = name,
+                    Name      = name,
+                    Arguments = JsonDocument.Parse(argsRaw)
                 });
             }
             else if (part.TryGetProperty("text", out var text))
