@@ -459,6 +459,11 @@
     white-space: nowrap;
 }
 
+.track-duration {
+    color: #555;
+    font-variant-numeric: tabular-nums;
+}
+
 .open-spotify {
     display: inline-block;
     margin-top: 1rem;

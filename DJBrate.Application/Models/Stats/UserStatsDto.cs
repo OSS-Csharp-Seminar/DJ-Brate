@@ -16,6 +16,7 @@ public class UserStatsDto
     public Dictionary<string, List<TopTrackEntry>> TopTracksByRange { get; set; } = new();
     public Dictionary<string, List<TopArtistEntry>> TopArtistsByRange { get; set; } = new();
     public List<MoodTimelineEntry> MoodTimeline { get; set; } = [];
+    public double TotalListeningHours { get; set; }
 }
 
 public record MoodCount(string Mood, int Count);

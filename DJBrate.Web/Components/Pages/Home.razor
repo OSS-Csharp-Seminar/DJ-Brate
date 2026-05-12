@@ -7,6 +7,7 @@
 @using DJBrate.Web.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IUserService UserService
+@inject IPlaylistService PlaylistService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject PlaybackState Playback
 @inject GenerationState Generation
@@ -20,6 +21,27 @@
             <p class="hero-eyebrow">AI Playlist Generator</p>
             <h1>What's your mood?</h1>
             <p>Describe how you're feeling and DJ Brate will make you the perfect playlist.</p>
+
+            @if (!hasPlaylists && string.IsNullOrEmpty(moodText) && selectedMood is null)
+            {
+                <div class="onboarding-card">
+                    <p class="onboarding-title">Your first playlist is one mood away</p>
+                    <div class="onboarding-steps">
+                        <div class="onboarding-step">
+                            <span class="onboarding-num">1</span>
+                            <span>Describe how you're feeling — or pick a mood chip below</span>
+                        </div>
+                        <div class="onboarding-step">
+                            <span class="onboarding-num">2</span>
+                            <span>Optionally pick genres and set energy / danceability</span>
+                        </div>
+                        <div class="onboarding-step">
+                            <span class="onboarding-num">3</span>
+                            <span>Hit Generate — your playlist appears on Spotify in seconds</span>
+                        </div>
+                    </div>
+                </div>
+            }
 
             <div class="mood-input">
                 <textarea @bind="moodText"
@@ -154,7 +176,7 @@
                             }
                             <div class="track-info">
                                 <div class="track-name">@track.TrackName</div>
-                                <div class="track-artist">@track.ArtistName</div>
+                                <div class="track-artist">@track.ArtistName@if (track.DurationMs.HasValue){<span class="track-duration"> · @FormatDuration(track.DurationMs)</span>}</div>
                             </div>
                         </div>
                     </div>
@@ -188,6 +210,7 @@
     private readonly HashSet<string> selectedGenres = new();
     private float energy = 0.5f;
     private float danceability = 0.5f;
+    private bool hasPlaylists = true;
 
     private bool CanGenerate =>
         !Generation.IsGenerating &&
@@ -197,6 +220,15 @@
     {
         Playback.OnChange += HandleStateChange;
         Generation.OnChange += HandleStateChange;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var idClaim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idClaim, out var userId)) return;
+        var playlists = await PlaylistService.GetPlaylistsByUserIdAsync(userId);
+        hasPlaylists = playlists.Any();
     }
 
     private void HandleStateChange() => InvokeAsync(StateHasChanged);
@@ -256,6 +288,13 @@
     {
         Playback.OnChange -= HandleStateChange;
         Generation.OnChange -= HandleStateChange;
+    }
+
+    private static string FormatDuration(int? ms)
+    {
+        if (ms is null) return "";
+        var s = ms.Value / 1000;
+        return $"{s / 60}:{s % 60:D2}";
     }
 
     private record FeatureBar(string Label, float Percent, string Display);

@@ -139,6 +139,10 @@ public class ListeningStatsService : IListeningStatsService
             .Select(r => new MoodTimelineEntry(DateOnly.FromDateTime(r.CreatedAt), r.DetectedMood!))
             .ToList();
 
+        var totalDurationMs = await _db.PlaylistTracks
+            .Where(pt => _db.Playlists.Any(p => p.Id == pt.PlaylistId && p.UserId == userId))
+            .SumAsync(pt => pt.DurationMs ?? 0);
+
         var completedSessions = sessions.Count(s => s.Status == MoodSessionStatuses.Completed);
         var failedSessions    = sessions.Count(s => s.Status == MoodSessionStatuses.Failed);
 
@@ -163,7 +167,8 @@ public class ListeningStatsService : IListeningStatsService
             ToolUsage            = toolUsage,
             TopTracksByRange     = topTracks,
             TopArtistsByRange    = topArtists,
-            MoodTimeline         = moodTimeline,
+            MoodTimeline          = moodTimeline,
+            TotalListeningHours   = totalDurationMs / 1000.0 / 3600.0,
         };
     }
 }

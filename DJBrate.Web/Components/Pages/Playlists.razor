@@ -188,7 +188,7 @@
                             }
                             <div class="track-info">
                                 <div class="track-name">@track.TrackName</div>
-                                <div class="track-artist">@track.ArtistName</div>
+                                <div class="track-artist">@track.ArtistName@if (track.DurationMs.HasValue){<span class="track-duration"> · @FormatDuration(track.DurationMs)</span>}</div>
                             </div>
                             @if (!string.IsNullOrEmpty(track.AiNote))
                             {
@@ -339,6 +339,13 @@
         searchText    = "";
         selectedMood  = "";
         selectedPeriod = "all";
+    }
+
+    private static string FormatDuration(int? ms)
+    {
+        if (ms is null) return "";
+        var s = ms.Value / 1000;
+        return $"{s / 60}:{s % 60:D2}";
     }
 
     private const long MaxCoverBytes = 5 * 1024 * 1024;

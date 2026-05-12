@@ -47,14 +47,25 @@ public class SpotifyApiClient : ISpotifyApiClient
 
     public async Task<SpotifyTrack?> SearchTrackAsync(string accessToken, string artist, string title)
     {
-        var query = string.IsNullOrWhiteSpace(artist)
-            ? $"track:\"{title}\""
-            : $"track:\"{title}\" artist:\"{artist}\"";
-        var result = await Client(accessToken).Search.Item(
-            new SearchRequest(SearchRequest.Types.Track, query) { Limit = 1 });
+        var queries = string.IsNullOrWhiteSpace(artist)
+            ? new[] { $"track:\"{title}\"" }
+            : new[]
+            {
+                $"track:\"{title}\" artist:\"{artist}\"",
+                $"{title} {artist}",
+                $"track:\"{title}\""
+            };
 
-        var track = result.Tracks.Items?.FirstOrDefault();
-        return track is null ? null : MapFullTrack(track);
+        foreach (var query in queries)
+        {
+            var result = await Client(accessToken).Search.Item(
+                new SearchRequest(SearchRequest.Types.Track, query) { Limit = 1 });
+            var track = result.Tracks.Items?.FirstOrDefault();
+            if (track is not null)
+                return MapFullTrack(track);
+        }
+
+        return null;
     }
 
     public async Task<SpotifyArtist?> GetArtistAsync(string accessToken, string artistId)
