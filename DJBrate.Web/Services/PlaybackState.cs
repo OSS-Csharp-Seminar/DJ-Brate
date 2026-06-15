@@ -50,10 +50,7 @@ public class PlaybackState
             if (PlayInvoker is not null) await PlayInvoker(trackId);
         }
         Notify();
-    } //sprema listu pjesama u Tracks, sprema source playlist id, 
-    // ako je kliknuta pjesma ista kao trenutno puštena poziva se toggle play, 
-    // ako je nova pjesma postavlja se PlayingTrackId na novu pjesmu, pozicija se resetira i poziva se 
-    // PlayInvoker i onda notify da se obavijeste pretplatnici na promjenu stanja
+    }
 
     public async Task TogglePlayPauseAsync()
     {

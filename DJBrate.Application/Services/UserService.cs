@@ -13,11 +13,10 @@ public class UserService : IUserService
         _userRepository = userRepository;
     }
 
-    // Dohvaca korisnika prema lokalnom ID-u.
     public async Task<User?> GetUserByIdAsync(Guid id)
         => await _userRepository.GetByIdAsync(id);
 
-    public async Task<User?> GetUserBySpotifyIdAsync(string spotifyId) //prosljedjuje se SpotifyId u IUserRepository
+    public async Task<User?> GetUserBySpotifyIdAsync(string spotifyId)
         => await _userRepository.GetBySpotifyIdAsync(spotifyId);
 
     public async Task<User> CreateOrUpdateUserAsync(User user)
@@ -38,6 +37,5 @@ public class UserService : IUserService
         existing.LastLoginAt        = DateTime.UtcNow;
         await _userRepository.UpdateAsync(existing);
         return existing;
-    } // ako korisnik ne postoji, postavlja se LastLoginAt na trenutno vrijeme i poziva se AddAsync da se doda u bazu. 
-    // Ako korisnik postoji, azuriraju se njegovi podaci i tokeni, te se poziva UpdateAsync da se spremi u bazu. U oba slucaja vraca se User objekt.
+    }
 }

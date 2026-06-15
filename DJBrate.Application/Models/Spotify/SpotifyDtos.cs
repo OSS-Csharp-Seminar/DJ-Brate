@@ -2,7 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace DJBrate.Application.Models.Spotify;
 
-// DTO za Spotify OAuth token odgovor.
 public class SpotifyTokenResponse
 {
     [JsonPropertyName("access_token")]
@@ -15,7 +14,6 @@ public class SpotifyTokenResponse
     public int ExpiresIn { get; set; }
 }
 
-// DTO za osnovni profil prijavljenog Spotify korisnika.
 public class SpotifyProfileResponse
 {
     [JsonPropertyName("id")]
@@ -37,7 +35,6 @@ public class SpotifyImage
     public string Url { get; set; } = null!;
 }
 
-// DTO za pjesmu dohvacenu ili pronadenu preko Spotify API-ja.
 public class SpotifyTrack
 {
     [JsonPropertyName("id")]
@@ -83,7 +80,6 @@ public class SpotifyAlbum
     public List<SpotifyImage> Images { get; set; } = [];
 }
 
-// DTO za Spotify izvodaca i njegove zanrove.
 public class SpotifyArtist
 {
     [JsonPropertyName("id")]
@@ -96,7 +92,6 @@ public class SpotifyArtist
     public List<string> Genres { get; set; } = [];
 }
 
-// Sadrzi audio vrijednosti koje je AI procijenio za playlistu.
 public class AudioFeatureTargets
 {
     public float? Valence { get; set; }

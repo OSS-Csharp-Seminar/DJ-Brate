@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
-// Sprema korisnikov like ili skip za jednu pjesmu.
 [Table("track_feedbacks")]
 public class TrackFeedback
 {
@@ -14,10 +13,6 @@ public class TrackFeedback
     [Required]
     [Column("user_id")]
     public Guid UserId { get; set; }
-
-    [Required]
-    [Column("playlist_track_id")]
-    public Guid PlaylistTrackId { get; set; }
 
     [Required]
     [Column("spotify_track_id")]
@@ -32,5 +27,4 @@ public class TrackFeedback
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
-    public PlaylistTrack PlaylistTrack { get; set; } = null!;
 }

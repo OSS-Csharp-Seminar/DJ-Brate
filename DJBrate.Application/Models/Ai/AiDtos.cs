@@ -2,7 +2,6 @@ using System.Text.Json;
 
 namespace DJBrate.Application.Models.Ai;
 
-// Predstavlja jednu user, assistant ili function poruku AI razgovora.
 public class AiMessage
 {
     public string Role { get; set; } = null!;
@@ -24,7 +23,6 @@ public class AiToolResult
     public string Result { get; set; } = null!;
 }
 
-// Predstavlja tekstualni odgovor i MCP pozive koje vrati AI.
 public class AiResponse
 {
     public string? Text { get; set; }
@@ -32,7 +30,6 @@ public class AiResponse
     public bool HasToolCalls => ToolCalls.Count > 0;
 }
 
-// Opisuje jedan MCP alat i njegov JSON format argumenata.
 public class AiToolDefinition
 {
     public string Name { get; set; } = null!;

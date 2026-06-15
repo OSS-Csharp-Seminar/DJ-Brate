@@ -63,9 +63,8 @@ public class GeminiClient : IAiClient
 
         var json = await response.Content.ReadFromJsonAsync<JsonDocument>();
         return ParseResponse(json!);
-    } // sastavlja gemini request, dodaje conversation maessages i tools, salje request na gemini api i parsira response u AiResponse
+    }
 
-    // Pretvara razgovor, alate i konfiguraciju u Gemini request objekt.
     private static object BuildRequest(
         string systemPrompt,
         List<AiMessage> conversationHistory,
@@ -150,7 +149,6 @@ public class GeminiClient : IAiClient
         };
     }
 
-    // Pretvara spremljeni MCP JSON rezultat u oblik koji Gemini ocekuje.
     private static object ParseToolResult(string json)
     {
         var element = JsonSerializer.Deserialize<JsonElement>(json);
@@ -159,7 +157,6 @@ public class GeminiClient : IAiClient
             : element;
     }
 
-    // Odreduje cekanje prije ponovnog poziva prema headeru ili backoff pravilu.
     private static TimeSpan GetRetryDelay(HttpResponseMessage response, int attempt)
     {
         if (response.Headers.RetryAfter?.Delta is { } delta && delta.TotalSeconds > 0)
@@ -172,18 +169,15 @@ public class GeminiClient : IAiClient
                 return wait + TimeSpan.FromSeconds(1);
         }
 
-        // exponential backoff: 2s, 4s, 8s, 16s
         return TimeSpan.FromSeconds(Math.Pow(2, attempt + 1));
     }
 
-    // Prepoznaje privremene HTTP greske za koje ima smisla ponoviti poziv.
     private static bool IsTransientError(HttpStatusCode code) =>
         code is HttpStatusCode.TooManyRequests
             or HttpStatusCode.InternalServerError
             or HttpStatusCode.BadGateway
             or HttpStatusCode.ServiceUnavailable;
 
-    // Pretvara Gemini odgovor u tekst i listu MCP tool poziva.
     private static AiResponse ParseResponse(JsonDocument doc)
     {
         var response = new AiResponse();

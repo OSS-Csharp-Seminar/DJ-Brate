@@ -1,6 +1,5 @@
 namespace DJBrate.Domain.Interfaces;
 
-// Osnovni ugovor za genericke CRUD operacije nad bazom.
 public interface IRepository<T> where T : class
 {
     Task<T?> GetByIdAsync(Guid id);

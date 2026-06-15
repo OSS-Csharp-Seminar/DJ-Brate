@@ -1,6 +1,5 @@
 namespace DJBrate.Application.Models.Spotify;
 
-// Predstavlja Spotify short, medium i long term periode.
 public enum SpotifyTimeRange
 {
     ShortTerm,
@@ -8,7 +7,6 @@ public enum SpotifyTimeRange
     LongTerm
 }
 
-// Pretvara enum period u vrijednost koju Spotify API ocekuje.
 public static class SpotifyTimeRangeExtensions
 {
     public static string ToApiString(this SpotifyTimeRange range) => range switch

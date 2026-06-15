@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
-// Model za dnevne agregirane statistike slusanja korisnika.
 [Table("listening_stats")]
 public class ListeningStat
 {

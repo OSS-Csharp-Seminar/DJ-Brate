@@ -20,7 +20,6 @@ public class AppDbContext : DbContext
     public DbSet<UserTopArtist> UserTopArtists { get; set; }
     public DbSet<ListeningStat> ListeningStats { get; set; }
 
-    // Definira veze, strane kljuceve i unique indekse baze.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -79,18 +78,13 @@ public class AppDbContext : DbContext
             .HasForeignKey(pt => pt.PlaylistId);
 
         modelBuilder.Entity<TrackFeedback>()
-            .HasIndex(tf => new { tf.UserId, tf.PlaylistTrackId })
+            .HasIndex(tf => new { tf.UserId, tf.SpotifyTrackId })
             .IsUnique();
 
         modelBuilder.Entity<TrackFeedback>()
             .HasOne(tf => tf.User)
             .WithMany(u => u.TrackFeedbacks)
             .HasForeignKey(tf => tf.UserId);
-
-        modelBuilder.Entity<TrackFeedback>()
-            .HasOne(tf => tf.PlaylistTrack)
-            .WithMany(pt => pt.TrackFeedbacks)
-            .HasForeignKey(tf => tf.PlaylistTrackId);
 
         modelBuilder.Entity<UserTopTrack>()
             .HasIndex(ut => new { ut.UserId, ut.SpotifyTrackId, ut.TimeRange })

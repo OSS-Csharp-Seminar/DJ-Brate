@@ -5,7 +5,6 @@ let lastPosition = 0;
 let endedFired = false;
 let progressInterval = null;
 
-// Periodicno salje trenutno playback stanje natrag u Blazor.
 function startProgressTimer() {
     stopProgressTimer();
     progressInterval = setInterval(async () => {
@@ -16,7 +15,6 @@ function startProgressTimer() {
     }, 500);
 }
 
-// Zaustavlja periodicno pracenje playera.
 function stopProgressTimer() {
     if (progressInterval) {
         clearInterval(progressInterval);
@@ -24,7 +22,6 @@ function stopProgressTimer() {
     }
 }
 
-// Stvara Spotify Web Playback SDK player i registrira njegove evente.
 function initPlayer() {
     if (!window.Spotify || !dotNetRef) return;
     if (player) { player.disconnect(); player = null; }
@@ -71,7 +68,6 @@ function initPlayer() {
     player.connect();
 }
 
-// Sprema .NET referencu i ucitava Spotify SDK ako jos nije dostupan.
 export function init(ref) {
     dotNetRef = ref;
     endedFired = false;
@@ -91,7 +87,6 @@ export function init(ref) {
     }
 }
 
-// Pokrece odabrani Spotify track na web player uredaju.
 export async function play(trackId) {
     if (!deviceId || !dotNetRef) return;
     endedFired = false;
@@ -108,25 +103,21 @@ export async function play(trackId) {
     });
 }
 
-// Pauzira Spotify player.
 export async function pause() {
     if (!player) return;
     await player.pause();
 }
 
-// Prebacuje player izmedu play i pause stanja.
 export async function togglePlay() {
     if (!player) return;
     await player.togglePlay();
 }
 
-// Pomice reprodukciju na zadanu poziciju.
 export async function seek(positionMs) {
     if (!player) return;
     await player.seek(positionMs);
 }
 
-// Zaustavlja timer i odspaja Spotify player.
 export function dispose() {
     stopProgressTimer();
     dotNetRef = null;

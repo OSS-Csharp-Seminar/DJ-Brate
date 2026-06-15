@@ -4,7 +4,6 @@ using System.Text.Json;
 
 namespace DJBrate.Domain.Entities;
 
-// Biljezi jedan MCP poziv, argumente, rezultat i trajanje.
 [Table("mcp_tool_calls")]
 public class McpToolCall
 {

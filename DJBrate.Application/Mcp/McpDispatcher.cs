@@ -32,7 +32,6 @@ public class McpDispatcher
         _tokenService  = tokenService;
     }
 
-    // Prema nazivu izvrsava MCP alat i biljezi rezultat, uspjeh i trajanje.
     public async Task<string> ExecuteToolAsync(McpExecutionContext ctx, string toolName, JsonDocument arguments)
     {
         var sw = Stopwatch.StartNew();
@@ -62,7 +61,6 @@ public class McpDispatcher
         return result;
     }
 
-    // Vraca sinkronizirane top pjesme korisnika za trazeni period.
     private async Task<string> HandleGetTopTracks(User user, JsonDocument args)
     {
         var timeRange = ParseTimeRange(args);
@@ -71,7 +69,6 @@ public class McpDispatcher
         return JsonSerializer.Serialize(result);
     }
 
-    // Vraca sinkronizirane top izvodace korisnika za trazeni period.
     private async Task<string> HandleGetTopArtists(User user, JsonDocument args)
     {
         var timeRange = ParseTimeRange(args);
@@ -80,7 +77,6 @@ public class McpDispatcher
         return JsonSerializer.Serialize(result);
     }
 
-    // Vraca AI-ju trenutne pjesme playliste koja se ureduje.
     private async Task<string> HandleGetCurrentTracks(McpExecutionContext ctx)
     {
         if (ctx.PlaylistId is null) return "[]";
@@ -92,7 +88,6 @@ public class McpDispatcher
         return JsonSerializer.Serialize(result);
     }
 
-    // Uklanja odabrane pjesme sa Spotifyja i iz lokalne baze.
     private async Task<string> HandleRemoveTracks(McpExecutionContext ctx, JsonDocument args)
     {
         if (ctx.PlaylistId is null) return """{"removed": 0}""";
@@ -119,7 +114,6 @@ public class McpDispatcher
         return JsonSerializer.Serialize(new { removed = ids.Count });
     }
 
-    // Pretrazuje i dodaje nove pjesme na Spotify i u lokalnu bazu.
     private async Task<string> HandleAddTracks(McpExecutionContext ctx, JsonDocument args)
     {
         if (ctx.PlaylistId is null) return """{"added": 0}""";
@@ -166,7 +160,6 @@ public class McpDispatcher
         return JsonSerializer.Serialize(new { added = resolved.Count });
     }
 
-    // Pretvara MCP time_range argument u SpotifyTimeRange enum.
     private static SpotifyTimeRange ParseTimeRange(JsonDocument args)
     {
         if (args.RootElement.TryGetProperty("time_range", out var tr))

@@ -2,7 +2,6 @@ using DJBrate.Domain.Entities;
 
 namespace DJBrate.Application.Interfaces;
 
-// Definira dohvat, cover, razgovor i dijeljenje playlista.
 public interface IPlaylistService
 {
     Task<Playlist?> GetPlaylistByIdAsync(Guid id);

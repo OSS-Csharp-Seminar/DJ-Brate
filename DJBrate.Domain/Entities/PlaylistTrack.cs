@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
-// Predstavlja jednu pjesmu i njezinu poziciju unutar playliste.
 [Table("playlist_tracks")]
 public class PlaylistTrack
 {
@@ -66,5 +65,4 @@ public class PlaylistTrack
     public string? AiNote { get; set; }
 
     public Playlist Playlist { get; set; } = null!;
-    public ICollection<TrackFeedback> TrackFeedbacks { get; set; } = new List<TrackFeedback>();
 }

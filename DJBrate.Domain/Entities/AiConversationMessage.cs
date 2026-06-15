@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
-// Sprema jednu poruku AI razgovora povezanu s mood sesijom.
 [Table("ai_conversation_messages")]
 public class AiConversationMessage
 {

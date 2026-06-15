@@ -2,7 +2,6 @@ using DJBrate.Domain.Entities;
 
 namespace DJBrate.Application.Mcp;
 
-// Prenosi korisnika, sesiju i playlistu kroz jedan MCP poziv.
 public class McpExecutionContext
 {
     public Guid SessionId { get; init; }

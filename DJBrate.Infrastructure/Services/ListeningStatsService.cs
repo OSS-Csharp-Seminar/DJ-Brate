@@ -13,7 +13,7 @@ public class ListeningStatsService : IListeningStatsService
     private const int MoodTimelineWindow = 90;
     private const int MaxMoods          = 8;
     private const int MaxGenres         = 10;
-    private const int TopTracksPerRange  = 10;
+    private const int TopTracksPerRange  = 20;
     private const int TopArtistsPerRange = 10;
 
     private static readonly SpotifyTimeRange[] AllTimeRanges =
@@ -26,7 +26,6 @@ public class ListeningStatsService : IListeningStatsService
         _db = db;
     }
 
-    // Cita korisnikove podatke iz baze i izracunava sve statistike za dashboard.
     public async Task<UserStatsDto> GetUserStatsAsync(Guid userId)
     {
         var since          = DateTime.UtcNow.AddDays(-RecentDayWindow);
@@ -104,10 +103,10 @@ public class ListeningStatsService : IListeningStatsService
                 .Where(t => t.UserId == userId && t.TimeRange == key)
                 .OrderBy(t => t.RankPosition)
                 .Take(TopTracksPerRange)
-                .Select(t => new { t.RankPosition, t.TrackName, t.ArtistName, t.SpotifyTrackId })
+                .Select(t => new { t.RankPosition, t.TrackName, t.ArtistName, t.SpotifyTrackId, t.AlbumImageUrl })
                 .ToListAsync();
             topTracks[key] = trackRows
-                .Select(r => new TopTrackEntry(r.RankPosition, r.TrackName, r.ArtistName, r.SpotifyTrackId))
+                .Select(r => new TopTrackEntry(r.RankPosition, r.TrackName, r.ArtistName, r.SpotifyTrackId, r.AlbumImageUrl))
                 .ToList();
         }
 

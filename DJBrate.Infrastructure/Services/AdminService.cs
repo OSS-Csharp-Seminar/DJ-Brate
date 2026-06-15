@@ -22,7 +22,6 @@ public class AdminService : IAdminService
         _db = db;
     }
 
-    // Dohvaca sve korisnike i osnovne podatke za admin tablicu.
     public async Task<List<AdminUserRow>> GetAllUsersAsync()
     {
         var users = await _db.Users
@@ -49,7 +48,6 @@ public class AdminService : IAdminService
             .ToList();
     }
 
-    // Dohvaca zadnje generirane playliste za admin pregled.
     public async Task<List<AdminPlaylistRow>> GetRecentPlaylistsAsync(int count = RecentPlaylistsDefault)
     {
         var rows = await _db.Playlists
@@ -66,7 +64,6 @@ public class AdminService : IAdminService
             .ToList();
     }
 
-    // Racuna ukupne brojeve korisnika, playlista, sesija i feedbacka.
     public async Task<AdminAggregateStats> GetAggregateStatsAsync()
     {
         var totalUsers     = await _db.Users.CountAsync();
@@ -86,11 +83,9 @@ public class AdminService : IAdminService
             feedbackRows.FirstOrDefault(f => f.Type == FeedbackTypes.Skip)?.Count ?? 0);
     }
 
-    // Dohvaca trenutno aktivnu AI konfiguraciju iz baze.
     public async Task<AiModelConfig?> GetActiveConfigAsync()
         => await _db.AiModelConfigs.FirstOrDefaultAsync(c => c.IsActive);
 
-    // Sprema promjene modela, temperature, tokena i system prompta.
     public async Task SaveConfigAsync(Guid configId, string modelName, float? temperature, int? maxTokens, string systemPrompt)
     {
         var config = await _db.AiModelConfigs.FindAsync(configId);
@@ -102,7 +97,6 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
     }
 
-    // Dohvaca zadnje neuspjesne AI sesije i njihovo trajanje.
     public async Task<List<AdminFailedSessionRow>> GetFailedSessionsAsync(int count = RecentFailedDefault)
     {
         var rows = await _db.MoodSessions
@@ -126,7 +120,6 @@ public class AdminService : IAdminService
             .ToList();
     }
 
-    // Dohvaca zadnje MCP pozive s uspjehom i vremenom izvrsavanja.
     public async Task<List<AdminToolCallRow>> GetRecentToolCallsAsync(int count = RecentToolCallsDefault)
     {
         var rows = await _db.McpToolCalls
@@ -147,7 +140,6 @@ public class AdminService : IAdminService
             .ToList();
     }
 
-    // Mijenja korisnikovu user ili admin ulogu u bazi.
     public async Task SetUserRoleAsync(Guid userId, string role)
     {
         var user = await _db.Users.FindAsync(userId);
@@ -156,7 +148,6 @@ public class AdminService : IAdminService
         await _db.SaveChangesAsync();
     }
 
-    // Brise korisnika i njegove povezane podatke iz lokalne baze.
     public async Task DeleteUserAsync(Guid userId)
     {
         var sessionIds = await _db.MoodSessions
@@ -208,7 +199,6 @@ public class AdminService : IAdminService
         await _db.Users.Where(u => u.Id == userId).ExecuteDeleteAsync();
     }
 
-    // Grupira sve detektirane moodove za admin statistiku.
     public async Task<List<AdminMoodCount>> GetGlobalMoodBreakdownAsync()
     {
         var rows = await _db.AiMoodMappings
@@ -222,7 +212,6 @@ public class AdminService : IAdminService
         return rows.Select(r => new AdminMoodCount(r.Mood, r.Count)).ToList();
     }
 
-    // Grupira sve korisnicki odabrane zanrove za admin statistiku.
     public async Task<List<AdminGenreCount>> GetGlobalGenreBreakdownAsync()
     {
         var allGenres = await _db.MoodSessions

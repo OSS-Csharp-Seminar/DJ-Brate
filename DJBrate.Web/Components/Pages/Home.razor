@@ -216,14 +216,12 @@
         !Generation.IsGenerating &&
         (!string.IsNullOrWhiteSpace(moodText) || !string.IsNullOrEmpty(selectedMood));
 
-    // Pretplacuje stranicu na promjene generiranja i reprodukcije.
     protected override void OnInitialized()
     {
         Playback.OnChange += HandleStateChange;
         Generation.OnChange += HandleStateChange;
     }
 
-    // Provjerava ima li prijavljeni korisnik vec generiranih playlista.
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -235,20 +233,17 @@
 
     private void HandleStateChange() => InvokeAsync(StateHasChanged);
 
-    // Odabire mood ili uklanja vec odabrani mood.
     private void ToggleMood(string mood)
     {
         selectedMood = selectedMood == mood ? null : mood;
     }
 
-    // Dodaje ili uklanja zanr iz odabranog skupa.
     private void ToggleGenre(string genre)
     {
         if (!selectedGenres.Add(genre))
             selectedGenres.Remove(genre);
     }
 
-    // Pokrece odabranu pjesmu iz upravo generirane playliste.
     private async Task PlayTrack(string trackId)
     {
         if (Generation.Result is null) return;
@@ -275,7 +270,7 @@
             danceability,
             string.IsNullOrWhiteSpace(playlistName) ? null : playlistName,
             string.IsNullOrWhiteSpace(playlistDescription) ? null : playlistDescription);
-    } //provjerava dali je osobi omogucen klik na ganerate button, ako je generacija u tijeku ili ako nije unesen mood ili odabran mood chip, button je onemogucen
+    }
 
     private void Reset()
     {
@@ -289,7 +284,6 @@
         danceability = 0.5f;
     }
 
-    // Odjavljuje event handlere kada se stranica zatvori.
     public void Dispose()
     {
         Playback.OnChange -= HandleStateChange;

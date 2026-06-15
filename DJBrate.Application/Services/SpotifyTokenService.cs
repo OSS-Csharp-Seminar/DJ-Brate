@@ -43,12 +43,6 @@ public class SpotifyTokenService : ISpotifyTokenService
         return await response.Content.ReadFromJsonAsync<SpotifyTokenResponse>()
             ?? throw new InvalidOperationException("Failed to deserialize token response.");
 
-            //Metoda stvara HttpClient, poziva GetCredentials() koji cita Spotify client id i secret iz konfiguracije, 
-            // zatim pretvara ih u Base64 string koji se koristi za Basic Authentication header. 
-            // Zatim salje POST zahtjev na Spotify token endpoint sa potrebnim form parametrima 
-            // (grant_type, code, redirect_uri). Ako je odgovor uspjesan, deserializira JSON odgovor 
-            // u SpotifyTokenResponse i vraca ga. Ako deserializacija ne uspije, baca iznimku. 
-            // (spotifyTokenResponse sadrzi access token, refresh token i vrijeme isteka tokena)
     }
 
     public async Task<string> EnsureValidTokenAsync(User user)
@@ -84,11 +78,7 @@ public class SpotifyTokenService : ISpotifyTokenService
         await _userRepository.UpdateAsync(user);
         return user.SpotifyAccessToken;
     }
-    //metoda koja provjerava je li trenutni access token korisnika još uvijek važeći. Ako jest, vraća ga. 
-    // Ako nije, koristi refresh token za dobivanje novog access tokena od Spotify-a.
-    //  Nakon što dobije novi token, ažurira korisnički zapis u bazi podataka s novim access tokenom i vremenom isteka te vraća novi access token.
 
-    // Sastavlja Base64 ClientId:ClientSecret vrijednost za Spotify Basic auth.
     private string GetCredentials()
     {
         var clientId     = _configuration["Spotify:ClientId"]!;

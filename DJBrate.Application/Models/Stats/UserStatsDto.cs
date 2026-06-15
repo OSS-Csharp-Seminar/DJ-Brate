@@ -1,6 +1,5 @@
 namespace DJBrate.Application.Models.Stats;
 
-// Prenosi sve izracunate korisnicke statistike prema Razor stranici.
 public class UserStatsDto
 {
     public int TotalPlaylists { get; set; }
@@ -24,6 +23,6 @@ public record MoodCount(string Mood, int Count);
 public record GenreCount(string Genre, int Count);
 public record DailyPlaylistCount(DateOnly Date, int Count);
 public record ToolUsage(string ToolName, int CallCount, double SuccessRate, double AvgMs);
-public record TopTrackEntry(int Rank, string TrackName, string ArtistName, string SpotifyTrackId);
+public record TopTrackEntry(int Rank, string TrackName, string ArtistName, string SpotifyTrackId, string? AlbumImageUrl);
 public record TopArtistEntry(int Rank, string ArtistName, string SpotifyArtistId, List<string> Genres);
 public record MoodTimelineEntry(DateOnly Date, string Mood);

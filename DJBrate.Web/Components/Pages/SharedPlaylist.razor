@@ -7,7 +7,7 @@
 @inject IPlaylistService PlaylistService
 @inject PlaybackState Playback
 
-<PageTitle>@(playlist is not null ? $"{playlist.Name} - DJ Brate" : "Shared playlist - DJ Brate")</PageTitle>
+<PageTitle>DJ Brate</PageTitle>
 
 <div class="page">
     @if (loaded && playlist is null)
@@ -111,7 +111,6 @@
     private List<AiConversationMessage> conversation = [];
     private bool loaded;
 
-    // Pretplacuje stranicu na promjene zajednickog playera.
     protected override void OnInitialized()
     {
         Playback.OnChange += HandlePlaybackChange;
@@ -119,7 +118,6 @@
 
     private void HandlePlaybackChange() => InvokeAsync(StateHasChanged);
 
-    // Prema share tokenu ucitava javnu playlistu i njezin AI razgovor.
     protected override async Task OnParametersSetAsync()
     {
         playlist = await PlaylistService.GetByShareTokenAsync(Token);
@@ -129,14 +127,12 @@
         loaded = true;
     }
 
-    // Pokrece odabranu pjesmu iz javno podijeljene playliste.
     private async Task PlayTrack(string trackId)
     {
         if (playlist is null) return;
         await Playback.PlayAsync(playlist.PlaylistTracks, trackId, playlist.Id);
     }
 
-    // Odjavljuje playback event kada se stranica zatvori.
     public void Dispose()
     {
         Playback.OnChange -= HandlePlaybackChange;

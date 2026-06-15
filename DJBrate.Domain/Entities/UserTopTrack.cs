@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
-// Sprema jednu top Spotify pjesmu korisnika za odredeni period.
 [Table("user_top_tracks")]
 public class UserTopTrack
 {
@@ -38,6 +37,9 @@ public class UserTopTrack
     [Required]
     [Column("rank_position")]
     public int RankPosition { get; set; }
+
+    [Column("album_image_url")]
+    public string? AlbumImageUrl { get; set; }
 
     [Required]
     [Column("synced_at")]

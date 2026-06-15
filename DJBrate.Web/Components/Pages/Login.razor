@@ -2,7 +2,7 @@
 @layout AuthLayout
 @inject NavigationManager Nav
 
-<PageTitle>DJ Brate — Sign in</PageTitle>
+<PageTitle>DJ Brate</PageTitle>
 
 <div class="auth-card">
     <div class="auth-logo">
@@ -31,7 +31,6 @@
 
     public string? ErrorMessage { get; set; }
 
-    // Prikazuje OAuth gresku vracenu kroz query parametar.
     protected override void OnInitialized()
     {
         if (!string.IsNullOrEmpty(SpotifyError))

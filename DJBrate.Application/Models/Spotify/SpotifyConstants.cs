@@ -1,6 +1,5 @@
 namespace DJBrate.Application.Models.Spotify;
 
-// Centralizira Spotify URL-ove, OAuth dozvole i vremenske postavke.
 public static class SpotifyConstants
 {
     public const string TokenUrl     = "https://accounts.spotify.com/api/token";

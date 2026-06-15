@@ -4,6 +4,7 @@ using System.Text.Json;
 using DJBrate.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DJBrate.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615073514_FeedbackPerSpotifyTrack")]
+    partial class FeedbackPerSpotifyTrack
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -487,6 +490,10 @@ namespace DJBrate.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("feedback_type");
 
+                    b.Property<Guid>("PlaylistTrackId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("playlist_track_id");
+
                     b.Property<string>("SpotifyTrackId")
                         .IsRequired()
                         .HasColumnType("text")
@@ -497,6 +504,8 @@ namespace DJBrate.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PlaylistTrackId");
 
                     b.HasIndex("UserId", "SpotifyTrackId")
                         .IsUnique();
@@ -617,10 +626,6 @@ namespace DJBrate.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<string>("AlbumImageUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("album_image_url");
 
                     b.Property<string>("ArtistName")
                         .IsRequired()
@@ -762,11 +767,19 @@ namespace DJBrate.Infrastructure.Migrations
 
             modelBuilder.Entity("DJBrate.Domain.Entities.TrackFeedback", b =>
                 {
+                    b.HasOne("DJBrate.Domain.Entities.PlaylistTrack", "PlaylistTrack")
+                        .WithMany("TrackFeedbacks")
+                        .HasForeignKey("PlaylistTrackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("DJBrate.Domain.Entities.User", "User")
                         .WithMany("TrackFeedbacks")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("PlaylistTrack");
 
                     b.Navigation("User");
                 });
@@ -812,6 +825,11 @@ namespace DJBrate.Infrastructure.Migrations
             modelBuilder.Entity("DJBrate.Domain.Entities.Playlist", b =>
                 {
                     b.Navigation("PlaylistTracks");
+                });
+
+            modelBuilder.Entity("DJBrate.Domain.Entities.PlaylistTrack", b =>
+                {
+                    b.Navigation("TrackFeedbacks");
                 });
 
             modelBuilder.Entity("DJBrate.Domain.Entities.User", b =>

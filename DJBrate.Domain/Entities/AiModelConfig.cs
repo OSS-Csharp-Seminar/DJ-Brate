@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
-// Sprema aktivni AI model, parametre i system prompt.
 [Table("ai_model_configs")]
 public class AiModelConfig
 {

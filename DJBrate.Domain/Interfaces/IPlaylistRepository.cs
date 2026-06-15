@@ -2,7 +2,6 @@ using DJBrate.Domain.Entities;
 
 namespace DJBrate.Domain.Interfaces;
 
-// Definira upite i promjene playlista i njihovih pjesama.
 public interface IPlaylistRepository : IRepository<Playlist>
 {
     Task<IEnumerable<Playlist>> GetByUserIdAsync(Guid userId);

@@ -2,7 +2,6 @@ using DJBrate.Domain.Entities;
 
 namespace DJBrate.Application.Interfaces;
 
-// Definira operacije za dohvat i spremanje korisnika.
 public interface IUserService
 {
     Task<User?> GetUserByIdAsync(Guid id);

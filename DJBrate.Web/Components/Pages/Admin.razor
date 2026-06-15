@@ -9,7 +9,7 @@
 @inject IAdminService AdminService
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Admin — DJ Brate</PageTitle>
+<PageTitle>DJ Brate</PageTitle>
 
 <div class="page">
     <h1>Admin</h1>
@@ -341,7 +341,6 @@
     private Guid? pendingDeleteId;
     private Guid? busyUserId;
 
-    // Ucitava korisnike, statistike, greske, MCP pozive i aktivnu AI konfiguraciju.
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -368,7 +367,6 @@
         loaded = true;
     }
 
-    // Dodjeljuje ili uklanja admin ulogu odabranom korisniku.
     private async Task SetRole(Guid userId, string role)
     {
         busyUserId = userId;
@@ -377,19 +375,16 @@
         busyUserId = null;
     }
 
-    // Otvara potvrdu brisanja za odabranog korisnika.
     private void InitiateDelete(Guid userId)
     {
         pendingDeleteId = userId;
     }
 
-    // Zatvara potvrdu brisanja bez promjena.
     private void CancelDelete()
     {
         pendingDeleteId = null;
     }
 
-    // Brise korisnika i njegove povezane podatke te osvjezava dashboard.
     private async Task ConfirmDelete(Guid userId)
     {
         busyUserId = userId;
@@ -400,7 +395,6 @@
         busyUserId = null;
     }
 
-    // Sprema model, temperaturu, max tokene i system prompt AI konfiguracije.
     private async Task SaveConfig()
     {
         if (saving) return;
@@ -413,7 +407,6 @@
         _ = ResetSaveFeedbackAfterDelay(id);
     }
 
-    // Nakon kratkog vremena skriva potvrdu spremanja konfiguracije.
     private async Task ResetSaveFeedbackAfterDelay(int id)
     {
         await Task.Delay(2000);
@@ -422,7 +415,6 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    // Pretvara globalni broj moodova u postotak za admin graf.
     private double MoodPercent(int count)
     {
         if (globalMoods.Count == 0) return 0;
@@ -430,7 +422,6 @@
         return max == 0 ? 0 : (double)count / max * 100;
     }
 
-    // Skracuje dugi prompt za prikaz u admin tablici.
     private static string TruncatePrompt(string? text)
         => string.IsNullOrEmpty(text) ? "—" : text.Length > 70 ? text[..70] + "…" : text;
 }

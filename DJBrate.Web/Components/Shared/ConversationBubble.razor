@@ -74,7 +74,6 @@ else if (Message.Role == AiMessageRoles.Assistant)
 
     private static readonly string[] MetaKeywords = ["My mood", "Preferred genres", "Energy level", "Danceability"];
 
-    // Parsira poruku i priprema reasoning, tagove ili naziv MCP alata za prikaz.
     protected override async Task OnParametersSetAsync()
     {
         if (ReferenceEquals(Message, _parsedMessage)) return;
@@ -106,7 +105,6 @@ else if (Message.Role == AiMessageRoles.Assistant)
             _reasoning = parseTask.Result;
     }
 
-    // Razdvaja korisnicki prompt od mood, genre i slider dodataka.
     private void ParseUserPrompt(string content)
     {
         var parts = SplitOnMeta.Split(content);
@@ -141,7 +139,6 @@ else if (Message.Role == AiMessageRoles.Assistant)
         _userTags     = tags;
     }
 
-    // Pretvara decimalnu slider vrijednost u citljiv postotak.
     private static string FormatSlider(string raw)
     {
         if (!float.TryParse(raw.Split('/')[0].Trim(), System.Globalization.NumberStyles.Float,
@@ -151,7 +148,6 @@ else if (Message.Role == AiMessageRoles.Assistant)
         return $"{(int)Math.Round(val * 100)}%";
     }
 
-    // Pretvara interni naziv MCP alata u citljiv naziv za korisnika.
     private static string GetToolLabel(string content)
     {
         foreach (var (toolName, label) in ToolLabels)

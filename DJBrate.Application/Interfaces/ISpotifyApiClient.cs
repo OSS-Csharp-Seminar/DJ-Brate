@@ -2,7 +2,6 @@ using DJBrate.Application.Models.Spotify;
 
 namespace DJBrate.Application.Interfaces;
 
-// Definira sve Spotify API operacije koje aplikacija koristi.
 public interface ISpotifyApiClient
 {
     Task<SpotifyProfileResponse> GetProfileAsync(string accessToken);
