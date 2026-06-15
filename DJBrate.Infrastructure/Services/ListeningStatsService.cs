@@ -26,6 +26,7 @@ public class ListeningStatsService : IListeningStatsService
         _db = db;
     }
 
+    // Cita korisnikove podatke iz baze i izracunava sve statistike za dashboard.
     public async Task<UserStatsDto> GetUserStatsAsync(Guid userId)
     {
         var since          = DateTime.UtcNow.AddDays(-RecentDayWindow);

@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Predstavlja jedan create ili edit AI zahtjev korisnika.
 [Table("mood_sessions")]
 public class MoodSession
 {

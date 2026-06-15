@@ -9,6 +9,7 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
 {
     public PlaylistRepository(AppDbContext context) : base(context) { }
 
+    // Dohvaca korisnikove playliste s mood sesijama, najnovije prve.
     public async Task<IEnumerable<Playlist>> GetByUserIdAsync(Guid userId)
         => await _dbSet
             .Include(p => p.MoodSession)
@@ -16,16 +17,19 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync();
 
+    // Dohvaca jednu playlistu zajedno sa svim pjesmama.
     public async Task<Playlist?> GetByIdWithTracksAsync(Guid id)
         => await _dbSet
             .Include(p => p.PlaylistTracks)
             .FirstOrDefaultAsync(p => p.Id == id);
 
+    // Dohvaca samo aktivno podijeljenu playlistu prema share tokenu.
     public async Task<Playlist?> GetByShareTokenAsync(string token)
         => await _dbSet
             .Include(p => p.PlaylistTracks)
             .FirstOrDefaultAsync(p => p.ShareToken == token && p.IsShared);
 
+    // Brise pjesme, azurira broj pjesama i ponovno slaze njihove pozicije.
     public async Task RemoveTracksAsync(Guid playlistId, List<string> spotifyTrackIds)
     {
         var tracks = await _context.Set<PlaylistTrack>()
@@ -49,6 +53,7 @@ public class PlaylistRepository : Repository<Playlist>, IPlaylistRepository
         await _context.SaveChangesAsync();
     }
 
+    // Dodaje pjesme na kraj playliste i azurira ukupan broj pjesama.
     public async Task AddTracksAsync(Guid playlistId, List<PlaylistTrack> tracks)
     {
         var maxPosition = await _context.Set<PlaylistTrack>()

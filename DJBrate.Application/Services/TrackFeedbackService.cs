@@ -13,12 +13,14 @@ public class TrackFeedbackService : ITrackFeedbackService
         _repo = repo;
     }
 
+    // Dohvaca korisnikov feedback i mapira ga po ID-u pjesme u playlisti.
     public async Task<Dictionary<Guid, string>> GetForPlaylistAsync(Guid userId, Guid playlistId)
     {
         var feedbacks = await _repo.GetByUserAndPlaylistAsync(userId, playlistId);
         return feedbacks.ToDictionary(f => f.PlaylistTrackId, f => f.FeedbackType);
     }
 
+    // Dodaje, mijenja ili uklanja like/dislike feedback za pjesmu.
     public async Task ToggleFeedbackAsync(Guid userId, PlaylistTrack track, string feedbackType)
     {
         var existing = await _repo.GetByUserAndTrackAsync(userId, track.Id);

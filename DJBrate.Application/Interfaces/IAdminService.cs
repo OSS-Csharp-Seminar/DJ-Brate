@@ -3,6 +3,7 @@ using DJBrate.Domain.Entities;
 
 namespace DJBrate.Application.Interfaces;
 
+// Definira admin dashboard, uloge, brisanje i AI konfiguraciju.
 public interface IAdminService
 {
     Task<List<AdminUserRow>> GetAllUsersAsync();

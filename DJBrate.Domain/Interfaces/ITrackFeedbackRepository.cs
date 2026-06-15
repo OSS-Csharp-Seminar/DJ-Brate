@@ -2,6 +2,7 @@ using DJBrate.Domain.Entities;
 
 namespace DJBrate.Domain.Interfaces;
 
+// Definira citanje i spremanje like/dislike feedbacka.
 public interface ITrackFeedbackRepository
 {
     Task<TrackFeedback?> GetByUserAndTrackAsync(Guid userId, Guid playlistTrackId);

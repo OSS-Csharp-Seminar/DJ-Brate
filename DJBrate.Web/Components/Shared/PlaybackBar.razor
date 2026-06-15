@@ -97,17 +97,21 @@
     private IJSObjectReference? _module;
     private DotNetObjectReference<PlaybackBar>? _selfRef;
 
+    // Pretplacuje player na promjene stanja i navigacije.
     protected override void OnInitialized()
     {
         State.OnChange += HandleStateChange;
         Nav.LocationChanged += HandleLocationChanged;
     }
 
+    // Ponovno iscrtava player nakon promjene PlaybackStatea.
     private void HandleStateChange() => InvokeAsync(StateHasChanged);
 
+    // Osvjezava player kada korisnik promijeni stranicu.
     private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
         => InvokeAsync(StateHasChanged);
 
+    // Pri prvom renderu povezuje PlaybackState s JavaScript Spotify playerom.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
@@ -121,6 +125,7 @@
     }
 
     [JSInvokable]
+    // Prima poziciju, trajanje i pause stanje iz JavaScripta.
     public Task OnPlaybackUpdate(double position, double duration, bool paused)
     {
         State.UpdatePlayback(position, duration, paused);
@@ -128,9 +133,11 @@
     }
 
     [JSInvokable]
+    // Prelazi na sljedecu pjesmu kada JavaScript javi zavrsetak.
     public Task OnPreviewEnded() => State.HandleTrackEndedAsync();
 
     [JSInvokable]
+    // Dohvaca i po potrebi osvjezava Spotify token za web player.
     public async Task<string> GetAccessToken()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -141,12 +148,14 @@
         return await TokenService.EnsureValidTokenAsync(user);
     }
 
+    // Pretvara vrijednost slidera i pomice reprodukciju.
     private async Task OnSeek(ChangeEventArgs e)
     {
         if (!double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var ms)) return;
         await State.SeekAsync(ms);
     }
 
+    // Otvara playlistu iz koje trenutno dolazi pjesma.
     private void GoToPlaylist()
     {
         if (State.SourcePlaylistId is { } id) Nav.NavigateTo($"/playlists/{id}");
@@ -176,6 +185,7 @@
         return $"{minutes}:{seconds:D2}";
     }
 
+    // Odspaja evente i gasi JavaScript player pri unistavanju komponente.
     public async ValueTask DisposeAsync()
     {
         State.OnChange -= HandleStateChange;

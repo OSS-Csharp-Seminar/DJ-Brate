@@ -37,7 +37,8 @@ public class GenerationState
 
         var task = _service.GenerateAsync(
             user, promptText, selectedMood, selectedGenres,
-            energyLevel, danceability, playlistNameOverride, playlistDescriptionOverride);
+            energyLevel, danceability, playlistNameOverride, playlistDescriptionOverride); //poziva se GenerateAsync metoda iz MoodSessionService klase koja generira playlistu na temelju unesenih parametara, 
+                                                                                          // a rezultat se sprema u task varijablu 
 
         await ((Task)task).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
@@ -49,6 +50,9 @@ public class GenerationState
 
         Notify();
     }
+    // ako je IsGenerating true prekida se novi poziv, ako je false onda se postavlja IsGenerating na true i resetira se 
+    // Result i ErrorMessage na null, te se poziva Notify() da obavijesti pretplatnike o promjeni stanja
+    //Notify() metoda poziva OnChange događaj kojiprikazuje korisniku "generating..." stanje ( StateHasChanged() )
 
     public void Reset()
     {

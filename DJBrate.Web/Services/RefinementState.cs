@@ -38,6 +38,8 @@ public class RefinementState
 
         Notify();
     }
+    // sprjecava 2 istovremena editanja, postavlja IsRefining na true, resetira LastReply i ErrorMessage, poziva Notify da se obavijeste pretplatnici,
+    // poziva _service.RefineAsync i ceka da se zavrsi, nakon toga postavlja IsRefining na false, ako je uspjesno postavlja LastReply na rezultat, ako nije postavlja ErrorMessage na poruku greske, i onda poziva Notify da se obavijeste pretplatnici
 
     private void Notify() => OnChange?.Invoke();
 }

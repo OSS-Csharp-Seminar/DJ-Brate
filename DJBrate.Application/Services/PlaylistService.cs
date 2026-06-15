@@ -38,18 +38,22 @@ public class PlaylistService : IPlaylistService
         _moodSessionRepository  = moodSessionRepository;
     }
 
+    // Dohvaca playlistu zajedno s njezinim pjesmama.
     public async Task<Playlist?> GetPlaylistByIdAsync(Guid id)
         => await _playlistRepository.GetByIdWithTracksAsync(id);
 
+    // Dohvaca sve playliste odredenog korisnika.
     public async Task<IEnumerable<Playlist>> GetPlaylistsByUserIdAsync(Guid userId)
         => await _playlistRepository.GetByUserIdAsync(userId);
 
+    // Sprema novu playlistu u lokalnu bazu.
     public async Task<Playlist> CreatePlaylistAsync(Playlist playlist)
     {
         await _playlistRepository.AddAsync(playlist);
         return playlist;
     }
 
+    // Mijenja lokalni URL naslovne slike ako korisnik posjeduje playlistu.
     public async Task<bool> UpdateCoverImageAsync(Guid playlistId, Guid userId, string imageUrl)
     {
         var playlist = await _playlistRepository.GetByIdAsync(playlistId);
@@ -59,6 +63,7 @@ public class PlaylistService : IPlaylistService
         return true;
     }
 
+    // Pretvara sliku u Spotify format i salje je kao cover playliste.
     public async Task SyncCoverToSpotifyAsync(Guid playlistId, Guid userId, byte[] imageBytes)
     {
         var playlist = await _playlistRepository.GetByIdAsync(playlistId);
@@ -75,9 +80,11 @@ public class PlaylistService : IPlaylistService
         await _spotifyClient.UploadPlaylistCoverAsync(token, playlist.SpotifyPlaylistId, jpegBase64);
     }
 
+    // Dohvaca korisnika potrebnog stranici za rad s playlistom.
     public async Task<User?> GetUserAsync(Guid userId)
         => await _userRepository.GetByIdAsync(userId);
 
+    // Dohvaca AI razgovor samo ako playlista pripada korisniku.
     public async Task<List<AiConversationMessage>> GetConversationAsync(Guid playlistId, Guid userId)
     {
         var playlist = await _playlistRepository.GetByIdAsync(playlistId);
@@ -96,8 +103,10 @@ public class PlaylistService : IPlaylistService
 
         await _playlistRepository.UpdateAsync(playlist);
         return playlist.ShareToken;
-    }
+    } //metoda koja omogucava dijeljenje playliste, provjerava da li playlist postoji i da li pripada korisniku, ako nema share token generira novi, postavlja IsShared na true, 
+    // update-a playlistu u repozitoriju i vraca share token
 
+    // Gasi javno dijeljenje playliste, ali zadrzava postojeci token.
     public async Task<bool> DisableSharingAsync(Guid playlistId, Guid userId)
     {
         var playlist = await _playlistRepository.GetByIdAsync(playlistId);
@@ -109,8 +118,10 @@ public class PlaylistService : IPlaylistService
     }
 
     public async Task<Playlist?> GetByShareTokenAsync(string token)
-        => await _playlistRepository.GetByShareTokenAsync(token);
+        => await _playlistRepository.GetByShareTokenAsync(token); //RandomNumberGenerator stvara share token u obliku Base64 stringa, koji se koristi za dijeljenje playliste. 
+        // Metoda GetByShareTokenAsync dohvaća playlistu iz repozitorija na temelju share tokena.
 
+    // Dohvaca AI razgovor za javno podijeljenu playlistu.
     public async Task<List<AiConversationMessage>> GetSharedConversationAsync(string token)
     {
         var playlist = await _playlistRepository.GetByShareTokenAsync(token);
@@ -118,6 +129,7 @@ public class PlaylistService : IPlaylistService
         return await _conversationRepository.GetByPlaylistIdAsync(playlist.Id);
     }
 
+    // Dohvaca originalnu sesiju kako bi se playlista mogla ponovno generirati.
     public async Task<MoodSession?> GetOriginalSessionAsync(Guid playlistId, Guid userId)
     {
         var playlist = await _playlistRepository.GetByIdAsync(playlistId);
@@ -125,12 +137,14 @@ public class PlaylistService : IPlaylistService
         return await _moodSessionRepository.GetByIdAsync(playlist.SessionId);
     }
 
+    // Generira kriptografski slucajan URL-safe share token.
     private static string GenerateShareToken()
         => Convert.ToBase64String(RandomNumberGenerator.GetBytes(ShareTokenByteLength))
             .Replace("+", "-")
             .Replace("/", "_")
             .TrimEnd('=');
 
+    // Smanjuje sliku i pretvara je u JPEG Base64 koji Spotify prihvaca.
     private static string? ReencodeToJpegBase64(byte[] bytes)
     {
         using var image = Image.Load(bytes);

@@ -9,6 +9,7 @@ public class MoodSessionRepository : Repository<MoodSession>, IMoodSessionReposi
 {
     public MoodSessionRepository(AppDbContext context) : base(context) { }
 
+    // Dohvaca sve AI mood sesije odredenog korisnika.
     public async Task<IEnumerable<MoodSession>> GetByUserIdAsync(Guid userId)
         => await _dbSet.Where(s => s.UserId == userId).ToListAsync();
 }

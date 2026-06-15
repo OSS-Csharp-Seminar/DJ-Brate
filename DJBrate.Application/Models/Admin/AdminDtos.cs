@@ -1,5 +1,6 @@
 namespace DJBrate.Application.Models.Admin;
 
+// DTO zapisi koje AdminService vraca admin dashboardu.
 public record AdminUserRow(Guid Id, string DisplayName, string Email, string Role, bool HasSpotify, DateTime? LastLoginAt, int PlaylistCount);
 public record AdminPlaylistRow(Guid Id, string Name, string UserDisplayName, int TrackCount, DateTime CreatedAt, bool IsShared);
 public record AdminAggregateStats(int TotalUsers, int TotalPlaylists, int TotalSessions, int LikeCount, int SkipCount);

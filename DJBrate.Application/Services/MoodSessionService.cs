@@ -32,15 +32,18 @@ public class MoodSessionService : IMoodSessionService
     public async Task<MoodSession?> GetSessionByIdAsync(Guid id)
         => await _sessionRepository.GetByIdAsync(id);
 
+    // Dohvaca sve mood sesije odredenog korisnika.
     public async Task<IEnumerable<MoodSession>> GetSessionsByUserIdAsync(Guid userId)
         => await _sessionRepository.GetByUserIdAsync(userId);
 
+    // Sprema novu mood sesiju u bazu.
     public async Task<MoodSession> CreateSessionAsync(MoodSession session)
     {
         await _sessionRepository.AddAsync(session);
         return session;
     }
 
+    // Vodi cijeli flow generiranja, od AI poziva do Spotifyja i lokalne baze.
     public async Task<PlaylistGenerationResult> GenerateAsync(
         User user,
         string? promptText,
@@ -51,7 +54,7 @@ public class MoodSessionService : IMoodSessionService
         string? playlistNameOverride,
         string? playlistDescriptionOverride)
     {
-        var config = await _configRepository.GetActiveConfigAsync()
+        var config = await _configRepository.GetActiveConfigAsync() // dohvaća aktivnu konfiguraciju AI modela iz repozitorija
             ?? throw new InvalidOperationException("No active AI model config found.");
 
         var session = new MoodSession
@@ -65,9 +68,9 @@ public class MoodSessionService : IMoodSessionService
             Danceability   = danceability,
             Status         = MoodSessionStatuses.Creating
         };
-        await _sessionRepository.AddAsync(session);
+        await _sessionRepository.AddAsync(session); // dodaje novu MoodSession u AppDbContext i sprema promjene u bazu podataka (Repository.cs) 
 
-        var aiTask = _aiMoodService.GeneratePlaylistAsync(session, user, config);
+        var aiTask = _aiMoodService.GeneratePlaylistAsync(session, user, config); 
         await ((Task)aiTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
         if (!aiTask.IsCompletedSuccessfully)
@@ -147,6 +150,7 @@ public class MoodSessionService : IMoodSessionService
         };
     }
 
+    // Stvara edit sesiju i pokrece AI uredivanje postojece playliste.
     public async Task<string> RefineAsync(User user, Playlist playlist, string userMessage)
     {
         var config = await _configRepository.GetActiveConfigAsync()
@@ -179,6 +183,7 @@ public class MoodSessionService : IMoodSessionService
         return refineTask.Result;
     }
 
+    // Oznacava neuspjesnu sesiju i zapisuje vrijeme zavrsetka.
     private async Task MarkFailedAsync(MoodSession session)
     {
         session.Status      = MoodSessionStatuses.Failed;

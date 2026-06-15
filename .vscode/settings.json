@@ -1,0 +1,358 @@
+{
+    "favorites.groups": [
+        "Default",
+        "01 Demo Guide",
+        "02 FLOW Spotify Login And Sync",
+        "03 FLOW Generate Input And Session",
+        "04 FLOW AI Gemini And Track Search",
+        "05 FLOW MCP Tool Calls",
+        "06 FLOW Save Playlist To Spotify And Database",
+        "07 FLOW Music Playback",
+        "08 FLOW Like And Dislike",
+        "09 FLOW AI Playlist Editing",
+        "10 FLOW Share Playlist",
+        "11 FLOW Statistics",
+        "12 FLOW Admin Roles Delete And AI Config",
+        "13 Database Map And Remaining Repositories"
+    ],
+    "favorites.currentGroup": "02 FLOW Spotify Login And Sync",
+    "favorites.resources": [
+        {
+            "filePath": "pitanja.txt",
+            "group": "01 Demo Guide"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Pages/Login.razor",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Web/Program.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/SpotifyTokenService.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/ISpotifyTokenService.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Spotify/SpotifyApiClient.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/ISpotifyApiClient.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Models/Spotify/SpotifyConstants.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Models/Spotify/SpotifyDtos.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/UserService.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IUserService.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/User.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/UserRepository.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IUserRepository.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/SpotifyDataSyncService.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/ISpotifyDataSyncService.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Application/Models/Spotify/SpotifyTimeRange.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/UserTopTrack.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/UserTopTrackRepository.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IUserTopTrackRepository.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/UserTopArtist.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/UserTopArtistRepository.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IUserTopArtistRepository.cs",
+            "group": "02 FLOW Spotify Login And Sync"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Pages/Home.razor",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Web/Services/GenerationState.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/MoodSessionService.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IMoodSessionService.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/MoodSession.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/MoodSessionTypes.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/MoodSessionStatuses.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/MoodSessionRepository.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IMoodSessionRepository.cs",
+            "group": "03 FLOW Generate Input And Session"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/AiMoodService.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IAiMoodService.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Ai/GeminiClient.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IAiClient.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Application/Models/Ai/AiDtos.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/AiModelConfig.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/AiModelConfigRepository.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IAiModelConfigRepository.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/AiConversationMessage.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/AiMessageRoles.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/AiConversationMessageRepository.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IAiConversationMessageRepository.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/AiMoodMapping.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/AiMoodMappingRepository.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IAiMoodMappingRepository.cs",
+            "group": "04 FLOW AI Gemini And Track Search"
+        },
+        {
+            "filePath": "DJBrate.Application/Mcp/McpToolDefinitions.cs",
+            "group": "05 FLOW MCP Tool Calls"
+        },
+        {
+            "filePath": "DJBrate.Application/Mcp/McpExecutionContext.cs",
+            "group": "05 FLOW MCP Tool Calls"
+        },
+        {
+            "filePath": "DJBrate.Application/Mcp/McpDispatcher.cs",
+            "group": "05 FLOW MCP Tool Calls"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/McpToolCall.cs",
+            "group": "05 FLOW MCP Tool Calls"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/McpToolCallRepository.cs",
+            "group": "05 FLOW MCP Tool Calls"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IMcpToolCallRepository.cs",
+            "group": "05 FLOW MCP Tool Calls"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/Playlist.cs",
+            "group": "06 FLOW Save Playlist To Spotify And Database"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/PlaylistTrack.cs",
+            "group": "06 FLOW Save Playlist To Spotify And Database"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/PlaylistRepository.cs",
+            "group": "06 FLOW Save Playlist To Spotify And Database"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IPlaylistRepository.cs",
+            "group": "06 FLOW Save Playlist To Spotify And Database"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Shared/PlaybackBar.razor",
+            "group": "07 FLOW Music Playback"
+        },
+        {
+            "filePath": "DJBrate.Web/Services/PlaybackState.cs",
+            "group": "07 FLOW Music Playback"
+        },
+        {
+            "filePath": "DJBrate.Web/wwwroot/js/spotify-player.js",
+            "group": "07 FLOW Music Playback"
+        },
+        {
+            "filePath": "DJBrate.Web/wwwroot/js/preview-watcher.js",
+            "group": "07 FLOW Music Playback"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/TrackFeedbackService.cs",
+            "group": "08 FLOW Like And Dislike"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/ITrackFeedbackService.cs",
+            "group": "08 FLOW Like And Dislike"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/TrackFeedback.cs",
+            "group": "08 FLOW Like And Dislike"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/FeedbackTypes.cs",
+            "group": "08 FLOW Like And Dislike"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/TrackFeedbackRepository.cs",
+            "group": "08 FLOW Like And Dislike"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/ITrackFeedbackRepository.cs",
+            "group": "08 FLOW Like And Dislike"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Pages/Playlists.razor",
+            "group": "09 FLOW AI Playlist Editing"
+        },
+        {
+            "filePath": "DJBrate.Web/Services/RefinementState.cs",
+            "group": "09 FLOW AI Playlist Editing"
+        },
+        {
+            "filePath": "DJBrate.Application/Services/PlaylistService.cs",
+            "group": "09 FLOW AI Playlist Editing"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IPlaylistService.cs",
+            "group": "09 FLOW AI Playlist Editing"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Pages/SharedPlaylist.razor",
+            "group": "10 FLOW Share Playlist"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Pages/Statistics.razor",
+            "group": "11 FLOW Statistics"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Services/ListeningStatsService.cs",
+            "group": "11 FLOW Statistics"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IListeningStatsService.cs",
+            "group": "11 FLOW Statistics"
+        },
+        {
+            "filePath": "DJBrate.Application/Models/Stats/UserStatsDto.cs",
+            "group": "11 FLOW Statistics"
+        },
+        {
+            "filePath": "DJBrate.Domain/Entities/ListeningStat.cs",
+            "group": "11 FLOW Statistics"
+        },
+        {
+            "filePath": "DJBrate.Web/Components/Pages/Admin.razor",
+            "group": "12 FLOW Admin Roles Delete And AI Config"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Services/AdminService.cs",
+            "group": "12 FLOW Admin Roles Delete And AI Config"
+        },
+        {
+            "filePath": "DJBrate.Application/Interfaces/IAdminService.cs",
+            "group": "12 FLOW Admin Roles Delete And AI Config"
+        },
+        {
+            "filePath": "DJBrate.Application/Models/Admin/AdminDtos.cs",
+            "group": "12 FLOW Admin Roles Delete And AI Config"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Data/AppDbContext.cs",
+            "group": "13 Database Map And Remaining Repositories"
+        },
+        {
+            "filePath": "DJBrate.Domain/Interfaces/IRepository.cs",
+            "group": "13 Database Map And Remaining Repositories"
+        },
+        {
+            "filePath": "DJBrate.Infrastructure/Repositories/Repository.cs",
+            "group": "13 Database Map And Remaining Repositories"
+        }
+    ],
+    "favorites.sortOrder": "MANUAL"
+}

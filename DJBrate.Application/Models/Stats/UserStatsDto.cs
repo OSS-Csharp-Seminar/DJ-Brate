@@ -1,5 +1,6 @@
 namespace DJBrate.Application.Models.Stats;
 
+// Prenosi sve izracunate korisnicke statistike prema Razor stranici.
 public class UserStatsDto
 {
     public int TotalPlaylists { get; set; }
