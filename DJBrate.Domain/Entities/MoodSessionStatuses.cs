@@ -1,5 +1,6 @@
 namespace DJBrate.Domain.Entities;
 
+// Dozvoljeni statusi izvrsavanja mood sesije.
 public static class MoodSessionStatuses
 {
     public const string Creating = "creating";

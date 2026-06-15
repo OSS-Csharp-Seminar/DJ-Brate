@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Sprema AI detektirani mood, reasoning i audio ciljeve sesije.
 [Table("ai_mood_mappings")]
 public class AiMoodMapping
 {

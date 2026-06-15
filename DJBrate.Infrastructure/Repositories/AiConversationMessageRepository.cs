@@ -9,12 +9,14 @@ public class AiConversationMessageRepository : Repository<AiConversationMessage>
 {
     public AiConversationMessageRepository(AppDbContext context) : base(context) { }
 
+    // Dohvaca poruke jedne sesije prema redoslijedu razgovora.
     public async Task<List<AiConversationMessage>> GetBySessionIdAsync(Guid sessionId)
         => await _dbSet
             .Where(m => m.SessionId == sessionId)
             .OrderBy(m => m.SequenceOrder)
             .ToListAsync();
 
+    // Dohvaca razgovor povezan s originalnom i edit sesijama playliste.
     public async Task<List<AiConversationMessage>> GetByPlaylistIdAsync(Guid playlistId)
     {
         var playlist = await _context.Set<Playlist>().FindAsync(playlistId);

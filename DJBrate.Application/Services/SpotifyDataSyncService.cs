@@ -32,10 +32,10 @@ public class SpotifyDataSyncService : ISpotifyDataSyncService
 
     public async Task SyncUserTopDataAsync(Guid userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId)
+        var user = await _userRepository.GetByIdAsync(userId) // pomocu user repository-a dohvaća korisnika iz baze po njegovom ID-u. 
             ?? throw new InvalidOperationException($"User {userId} not found.");
 
-        var accessToken = await _tokenService.EnsureValidTokenAsync(user);
+        var accessToken = await _tokenService.EnsureValidTokenAsync(user); // poziva EnsureValidTokenAsync i tako dobije vazeci access token.
 
         foreach (var timeRange in TimeRanges)
         {
@@ -77,5 +77,7 @@ public class SpotifyDataSyncService : ISpotifyDataSyncService
                 });
             }
         }
+        //prolazi kroz sve vremenske intervale (short, medium, long) i za svaki dohvaća top pjesme i top izvođače korisnika sa Spotify-a.
+        //Zatim briše postojeće zapise u bazi za taj ( stari ) vremenski interval
     }
 }

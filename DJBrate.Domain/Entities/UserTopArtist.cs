@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Sprema jednog top Spotify izvodaca korisnika za odredeni period.
 [Table("user_top_artists")]
 public class UserTopArtist
 {

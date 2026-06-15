@@ -334,6 +334,7 @@
         }
     }
 
+    // Vraca pretragu, mood i vremenski filter na pocetne vrijednosti.
     private void ClearFilters()
     {
         searchText    = "";
@@ -359,6 +360,7 @@
 
     private void HandlePlaybackChange() => InvokeAsync(StateHasChanged);
 
+    // Nakon AI editiranja ponovno ucitava razgovor i izmijenjenu playlistu.
     private async void HandleRefinementChange()
     {
         if (playlist is not null && !Refinement.IsRefining)
@@ -369,6 +371,7 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    // Prema URL parametru ucitava popis playlista ili detalje jedne playliste.
     protected override async Task OnParametersSetAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -399,21 +402,25 @@
         }
     }
 
+    // Otvara ili zatvara AI objasnjenje uz odabranu pjesmu.
     private void ToggleNote(Guid trackId)
         => expandedNoteId = expandedNoteId == trackId ? null : trackId;
 
+    // Sprema like/dislike i ponovno ucitava feedback za playlistu.
     private async Task ToggleFeedback(PlaylistTrack track, string feedbackType)
     {
         await FeedbackService.ToggleFeedbackAsync(currentUserId, track, feedbackType);
         feedback = await FeedbackService.GetForPlaylistAsync(currentUserId, playlist!.Id);
     }
 
+    // Salje odabranu pjesmu u zajednicki PlaybackState.
     private async Task PlayTrack(string trackId)
     {
         if (playlist is null) return;
         await Playback.PlayAsync(playlist.PlaylistTracks, trackId, playlist.Id);
     }
 
+    // Validira, sprema i po mogucnosti sinkronizira novu cover sliku sa Spotifyjem.
     private async Task HandleCoverUpload(InputFileChangeEventArgs e)
     {
         if (playlist is null) return;
@@ -476,6 +483,7 @@
         uploadingCover = false;
     }
 
+    // Salje korisnicku poruku u AI flow za uredivanje playliste.
     private async Task SendRefinement()
     {
         if (playlist is null || currentUser is null || string.IsNullOrWhiteSpace(refineText)) return;
@@ -484,12 +492,14 @@
         await Refinement.RefineAsync(currentUser, playlist, message);
     }
 
+    // Salje edit poruku pritiskom na Enter bez Shifta.
     private async Task HandleRefineKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !e.ShiftKey)
             await SendRefinement();
     }
 
+    // Ukljucuje ili iskljucuje javno dijeljenje trenutne playliste.
     private async Task ToggleShare()
     {
         if (playlist is null || sharingBusy) return;
@@ -515,6 +525,7 @@
         }
     }
 
+    // Kopira javni share link u clipboard.
     private async Task CopyShareLink()
     {
         if (string.IsNullOrEmpty(ShareUrl)) return;
@@ -525,6 +536,7 @@
         _ = ResetCopyFeedbackAfterDelay(id);
     }
 
+    // Nakon kratkog vremena skriva poruku da je link kopiran.
     private async Task ResetCopyFeedbackAfterDelay(int id)
     {
         await Task.Delay(2000);
@@ -533,6 +545,7 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    // Ponovno generira playlistu koristeci podatke originalne mood sesije.
     private async Task Regenerate()
     {
         if (playlist is null || currentUser is null || regenerating || Generation.IsGenerating) return;

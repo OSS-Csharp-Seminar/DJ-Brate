@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<UserTopArtist> UserTopArtists { get; set; }
     public DbSet<ListeningStat> ListeningStats { get; set; }
 
+    // Definira veze, strane kljuceve i unique indekse baze.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

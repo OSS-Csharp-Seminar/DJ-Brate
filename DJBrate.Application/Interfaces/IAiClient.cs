@@ -2,6 +2,7 @@ using DJBrate.Application.Models.Ai;
 
 namespace DJBrate.Application.Interfaces;
 
+// Definira slanje razgovora i MCP alata odabranom AI modelu.
 public interface IAiClient
 {
     Task<AiResponse> SendMessageAsync(

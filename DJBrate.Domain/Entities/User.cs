@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Predstavlja lokalnog korisnika, Spotify profil, tokene i ulogu.
 [Table("users")]
 public class User
 {

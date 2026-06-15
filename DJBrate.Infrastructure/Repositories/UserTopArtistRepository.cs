@@ -9,11 +9,13 @@ public class UserTopArtistRepository : Repository<UserTopArtist>, IUserTopArtist
 {
     public UserTopArtistRepository(AppDbContext context) : base(context) { }
 
+    // Dohvaca top izvodace korisnika za odabrani Spotify period.
     public async Task<IEnumerable<UserTopArtist>> GetByUserAndTimeRangeAsync(Guid userId, string timeRange)
         => await _dbSet.Where(a => a.UserId == userId && a.TimeRange == timeRange)
                        .OrderBy(a => a.RankPosition)
                        .ToListAsync();
 
+    // Brise stare top izvodace prije nove sinkronizacije perioda.
     public async Task DeleteByUserAndTimeRangeAsync(Guid userId, string timeRange)
     {
         var items = await _dbSet.Where(a => a.UserId == userId && a.TimeRange == timeRange).ToListAsync();

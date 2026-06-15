@@ -5,6 +5,7 @@ namespace DJBrate.Application.Mcp;
 
 public static class McpToolDefinitions
 {
+    // Definira alate koje AI smije koristiti tijekom stvaranja playliste.
     public static List<AiToolDefinition> GetCreateModeTools() =>
     [
         new AiToolDefinition
@@ -23,7 +24,7 @@ public static class McpToolDefinitions
                 },
                 "required": ["time_range"]
             }
-            """)
+            """) 
         },
         new AiToolDefinition
         {
@@ -45,6 +46,7 @@ public static class McpToolDefinitions
         }
     ];
 
+    // Definira alate za citanje i mijenjanje postojece playliste.
     public static List<AiToolDefinition> GetEditModeTools() =>
     [
         new AiToolDefinition

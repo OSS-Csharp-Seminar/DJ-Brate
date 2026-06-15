@@ -93,13 +93,17 @@ public class AiMoodService : IAiMoodService
         _feedbackRepo    = feedbackRepo;
     }
 
+    // Salje korisnicke postavke AI-ju i pretvara odgovor u stvarne Spotify pjesme.
     public async Task<AiMoodResult> GeneratePlaylistAsync(MoodSession session, User user, AiModelConfig config)
     {
         var systemPrompt = string.IsNullOrWhiteSpace(config.SystemPrompt)
             ? DefaultSystemPrompt
-            : config.SystemPrompt;
+            : config.SystemPrompt; //provjeravamo da li je sistemski prompt prazan, ako jeste koristimo defaultni prompt iz AiMoodService, ako nije koristimo onaj koji je u configu
 
-        var requestedTracks = ExtractRequestedTracks(session.PromptText);
+        var requestedTracks = ExtractRequestedTracks(session.PromptText); //ExtractRequestedTracks je metoda koja koristi regex da izvuče tražene pjesme iz prompt-a , 
+        // izdvaja naslove i izvođače ako postoje takvi zahtjevi onda SpotifyTokenService.EnsureValidTokenAsync() dobiva token, 
+        // SpotifyApiClient.SearchTrackAsync() provjerava pjesmu, 
+        // SpotifyApiClient.GetArtistAsync() moze dohvatiti zanrove izvodaca,potvrdene pjesme i zanrovi dodaju se u system prompt
         var preSearched = new List<SpotifyTrack>();
         if (requestedTracks.Count > 0)
         {
@@ -140,14 +144,14 @@ public class AiMoodService : IAiMoodService
         var conversation = new List<AiMessage>();
         var sequenceOrder = 0;
 
-        var userPrompt = BuildUserPrompt(session);
+        var userPrompt = BuildUserPrompt(session); //BuildUserPrompt je metoda koja kreira prompt na osnovu korisnikovog unosa, mood-a, zanrova, energy levela i danceability-a
         conversation.Add(new AiMessage { Role = AiMessageRoles.User, Text = userPrompt });
-        await SaveMessage(session.Id, AiMessageRoles.User, userPrompt, sequenceOrder++);
+        await SaveMessage(session.Id, AiMessageRoles.User, userPrompt, sequenceOrder++); //stvara se AiMessages ulogom User i sprema se u bazu podataka
 
         for (var round = 0; round < MaxToolCallRounds; round++)
         {
             var response = await _aiClient.SendMessageAsync(
-                systemPrompt, conversation, tools, config.Temperature, config.MaxTokens);
+                systemPrompt, conversation, tools, config.Temperature, config.MaxTokens); //SendMessageAsync je metoda koja salje poruku AI modelu, uzima sistemski prompt, konverzaciju, alate, temperaturu i max token-e iz config-a.
 
             if (response.HasToolCalls)
             {
@@ -170,7 +174,7 @@ public class AiMoodService : IAiMoodService
                         }
                     });
                     await SaveMessage(session.Id, AiMessageRoles.Function, result, sequenceOrder++);
-                }
+                } //ako AI model vrati tool calls, AiMoodService sprema assistant poruku sa tool call-om, zatim izvršava alat preko McpDispatcher-a i sprema rezultat u bazu podataka kao function poruku.
             }
             else if (response.Text is not null)
             {
@@ -187,11 +191,13 @@ public class AiMoodService : IAiMoodService
                     conversation.Add(new AiMessage { Role = AiMessageRoles.User, Text = nudge });
                     await SaveMessage(session.Id, AiMessageRoles.User, nudge, sequenceOrder++);
                     continue;
-                }
+                } //ako AI model vrati text, AiMoodService sprema assistant poruku sa text-om, zatim provjerava da li je text validan JSON, 
+                // ako nije validan JSON, conversation dobiva poruku da AI mora vratiti validan JSON, i petlja se nastavlja dok AI ne vrati 
+                // validan JSON ili dok se ne dostigne MaxToolCallRounds.
 
                 parseCheck.Result.Dispose();
 
-                var aiResult = await ParseFinalResponse(session.Id, user, response.Text);
+                var aiResult = await ParseFinalResponse(session.Id, user, response.Text); //ParseFinalResponse je metoda kojacita iz JSON-a playlist_name, playlist_description, detected_mood, reasoning, audio_features... 
 
                 if (preSearched.Count > 0)
                 {
@@ -207,6 +213,7 @@ public class AiMoodService : IAiMoodService
         throw new InvalidOperationException("AI did not produce a valid JSON response within the allowed rounds.");
     }
 
+    // AI-ju daje trenutnu playlistu i feedback te mu omogucava MCP uredivanje.
     public async Task<string> RefinePlaylistAsync(MoodSession editSession, Playlist playlist, User user, string userMessage, AiModelConfig config)
     {
         var feedbacks  = await _feedbackRepo.GetPlaylistFeedbackAsync(user.Id, playlist.Id);
@@ -291,6 +298,7 @@ public class AiMoodService : IAiMoodService
         return "Done.";
     }
 
+    // Spaja prompt, mood, zanrove i slidere u jednu korisnicku AI poruku.
     private static string BuildUserPrompt(MoodSession session)
     {
         var parts = new List<string>();
@@ -315,6 +323,7 @@ public class AiMoodService : IAiMoodService
             : "Surprise me with a good playlist based on my listening history.";
     }
 
+    // Iz prompta izdvaja pjesme koje je korisnik izricito zatrazio.
     private static List<(string Title, string? Artist)> ExtractRequestedTracks(string? prompt)
     {
         if (string.IsNullOrWhiteSpace(prompt))
@@ -333,6 +342,7 @@ public class AiMoodService : IAiMoodService
         return results;
     }
 
+    // Parsira konacni AI JSON i sprema detektirani mood i audio parametre.
     private async Task<AiMoodResult> ParseFinalResponse(Guid sessionId, User user, string aiText)
     {
         var json = ExtractJson(aiText);
@@ -382,6 +392,7 @@ public class AiMoodService : IAiMoodService
         };
     }
 
+    // Pretvara AI biljeske za pjesme u dictionary za brzo povezivanje.
     private static Dictionary<string, string> ParseTrackNotes(JsonElement root)
     {
         var notes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -399,6 +410,7 @@ public class AiMoodService : IAiMoodService
         return notes;
     }
 
+    // Pretrazuje AI prijedloge na Spotifyju i uklanja nepostojece ili duple pjesme.
     private async Task<List<SpotifyTrack>> ResolveTracksAsync(User user, JsonElement root, Dictionary<string, string> trackNotes)
     {
         if (!root.TryGetProperty("tracks", out var tracksElement) || tracksElement.ValueKind != JsonValueKind.Array)
@@ -426,8 +438,12 @@ public class AiMoodService : IAiMoodService
         }
 
         return resolved;
-    }
+    } // ResolveTracksAsync za svaki AI predloženi track cita artist i title, 
+    // poziva SpotifyApiClient.SearchTrackAsync() da provjeri da li pjesma postoji na Spotify-u, 
+    // ako postoji dodaje je u listu resolved, ako ne postoji preskace je. Ako je pjesma vec dodana preskace je. 
+    // Dodaje AI bilješkupjesmi na kraju dodaje pronadenu SpotifyTrack u rezultat.
 
+    // Izdvaja JSON objekt iz tekstualnog AI odgovora.
     private static string ExtractJson(string text)
     {
         var start = text.IndexOf('{');
@@ -437,9 +453,11 @@ public class AiMoodService : IAiMoodService
         throw new InvalidOperationException("AI response did not contain valid JSON.");
     }
 
+    // Cita opcionalnu decimalnu vrijednost iz AI JSON-a.
     private static float? GetOptionalFloat(JsonElement element, string property)
         => element.TryGetProperty(property, out var val) ? (float)val.GetDouble() : null;
 
+    // Sprema jednu poruku AI razgovora u bazu.
     private async Task SaveMessage(Guid sessionId, string role, string content, int order)
     {
         await _messageRepo.AddAsync(new AiConversationMessage

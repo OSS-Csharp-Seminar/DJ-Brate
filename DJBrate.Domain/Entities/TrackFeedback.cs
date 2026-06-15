@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Sprema korisnikov like ili skip za jednu pjesmu.
 [Table("track_feedbacks")]
 public class TrackFeedback
 {

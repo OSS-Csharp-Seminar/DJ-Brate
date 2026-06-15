@@ -420,6 +420,7 @@
         }
     }
 
+    // Cita prijavljenog korisnika i ucitava sve statistike iz lokalne baze.
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -428,6 +429,7 @@
         stats = await StatsService.GetUserStatsAsync(userId);
     }
 
+    // Pretvara broj mood pojavljivanja u postotak za prikaz trake.
     private double MoodPercent(int count)
     {
         if (stats is null || stats.MoodBreakdown.Count == 0) return 0;
@@ -441,6 +443,7 @@
         "#e05ca8", "#5ce0d8", "#e0c45c", "#8ae05c", "#e08a5c"
     ];
 
+    // Odreduje stabilnu boju za svaki naziv mooda.
     private static string MoodColor(string mood)
         => MoodPalette[Math.Abs(mood.GetHashCode()) % MoodPalette.Length];
 

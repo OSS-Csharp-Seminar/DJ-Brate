@@ -5,6 +5,7 @@ let apiPromise = null;
 let endedFired = false;
 let currentTrackId = null;
 
+// Jednom ucitava Spotify Embed IFrame API.
 function loadIframeApi() {
     if (apiPromise) return apiPromise;
     apiPromise = new Promise(resolve => {
@@ -24,10 +25,12 @@ function loadIframeApi() {
     return apiPromise;
 }
 
+// Dohvaca HTML element u koji se ucitava Spotify embed.
 function getEmbedElement() {
     return document.getElementById('spotify-embed');
 }
 
+// Stvara embed controller i povezuje playback evente s Blazorom.
 async function ensureController() {
     if (controller) return controller;
     if (controllerPromise) return controllerPromise;
@@ -65,11 +68,13 @@ async function ensureController() {
     return controllerPromise;
 }
 
+// Sprema .NET referencu za callback pozive prema Blazoru.
 export function init(ref) {
     dotNetRef = ref;
     endedFired = false;
 }
 
+// Ucitava i pokrece odabranu pjesmu u Spotify embedu.
 export async function play(trackId) {
     const c = await ensureController();
     if (!c) return;
@@ -81,21 +86,25 @@ export async function play(trackId) {
     c.play();
 }
 
+// Pauzira embed player.
 export async function pause() {
     if (!controller) return;
     controller.pause();
 }
 
+// Prebacuje embed player izmedu play i pause stanja.
 export async function togglePlay() {
     if (!controller) return;
     controller.togglePlay();
 }
 
+// Pomice embed reprodukciju na zadanu poziciju.
 export async function seek(positionMs) {
     if (!controller) return;
     controller.seek(positionMs / 1000);
 }
 
+// Uklanja .NET referencu i pauzira embed player.
 export function dispose() {
     dotNetRef = null;
     if (controller) controller.pause();

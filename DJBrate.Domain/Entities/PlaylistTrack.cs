@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Predstavlja jednu pjesmu i njezinu poziciju unutar playliste.
 [Table("playlist_tracks")]
 public class PlaylistTrack
 {

@@ -133,7 +133,9 @@ app.MapGet("/auth/spotify/login", (IMemoryCache cache, IConfiguration config) =>
               $"&show_dialog=true";
 
     return Results.Redirect(url);
-});
+});  // stvarase nasumicni state i spremamo ga u IMemoryCache, zatim citamo Spotify client id, redirect uri iz konfiguracije,
+    //citamo dozvole iz SpotifyConstants.Scopes, zatim gradimo URL za Spotify autorizaciju i redirektamo korisnika na taj URL. 
+    // > Kada Spotify zavrsi autorizaciju, redirektat ce korisnika nazad na /auth/spotify/callback sa query parametrima code, state i eventualno error.
 
 app.MapGet("/auth/spotify/callback", async (
     HttpContext ctx,
@@ -155,16 +157,19 @@ app.MapGet("/auth/spotify/callback", async (
     if (string.IsNullOrEmpty(state) || !cache.TryGetValue(stateKey, out _))
         return Results.Redirect("/login?spotifyError=invalid_state");
     cache.Remove(stateKey);
-
+    //Ako je state ispravan brise se iz cachea, zatim poziva tokenService.ExchangeCodeForTokensAsync da zamijeni authorization code za access i refresh token.
+    
     var tokens  = await tokenService.ExchangeCodeForTokensAsync(code, config["Spotify:RedirectUri"]!);
-    var profile = await spotifyClient.GetProfileAsync(tokens.AccessToken);
+    var profile = await spotifyClient.GetProfileAsync(tokens.AccessToken); // sluzi za dohvat Spotify profila: stvara SpotifyClient sa access tokenom, zatim poziva UserProfile.Current() da dobije profil korisnika. 
+                                                                           // Mapira odgovor u SpotifyProfileResponse koji sadrzi id, display name, email i avatar url. to je implementirano u SpotifyApiClient.GetProfileAsync.
 
     var spotifyId   = profile.Id;
     var displayName = profile.DisplayName ?? spotifyId;
     var email       = profile.Email ?? $"{spotifyId}{SpotifyConstants.PlaceholderEmailSuffix}";
     var avatarUrl   = profile.Images.FirstOrDefault()?.Url;
 
-    var existingUser = await userService.GetUserBySpotifyIdAsync(spotifyId);
+    var existingUser = await userService.GetUserBySpotifyIdAsync(spotifyId); // provjerava postoji li korisnik sa tim Spotify ID-em u bazi. Ako ne postoji, stvara se novi korisnik. 
+                                                                            //Ako postoji, azuriraju se njegovi podaci i tokeni. (prosljedjuje se SpotifyId u IUserRepository)
     var needsSync = existingUser is null
         || !existingUser.LastLoginAt.HasValue
         || existingUser.LastLoginAt < DateTime.UtcNow.AddHours(-SpotifyConstants.SyncIntervalHours);
@@ -179,7 +184,7 @@ app.MapGet("/auth/spotify/callback", async (
         SpotifyRefreshToken = tokens.RefreshToken,
         TokenExpiresAt      = DateTime.UtcNow.AddSeconds(tokens.ExpiresIn),
         Role                = SpotifyConstants.DefaultUserRole
-    });
+    }); //stvara novi User objekt sa podacima iz Spotify profila i tokena, te poziva CreateOrUpdateUserAsync da ga spremi u bazu. Ako korisnik vec postoji, azuriraju se njegovi podaci i tokeni.
 
     var claims = new List<Claim>
     {
@@ -191,8 +196,12 @@ app.MapGet("/auth/spotify/callback", async (
     var principal = new ClaimsPrincipal(
         new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     await ctx.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+    //stvara Claims  za authentication cookie u browseru tako apk zna tko je korisnik, te poziva SignInAsync da postavi cookie u browseru. 
+    // ( claims je lista podataka korisnika koji se spremaju u cookie, a principal je objekt koji sadrzi te claims u nasem slucaju id, display name, email i role korisnika)
+    
+    
 
-    if (needsSync)
+    if (needsSync) // ako korisnik ne postoji, ili nije se logirao u zadnjih 24h, poziva se syncService.SyncUserTopDataAsync da se sinkroniziraju top podaci korisnika sa Spotify-om.
         await syncService.SyncUserTopDataAsync(user.Id);
 
     return Results.Redirect("/");

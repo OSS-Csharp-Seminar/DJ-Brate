@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DJBrate.Domain.Entities;
 
+// Predstavlja lokalnu playlistu povezanu sa Spotify playlistom.
 [Table("playlists")]
 public class Playlist
 {
