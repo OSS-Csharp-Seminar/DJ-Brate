@@ -40,7 +40,7 @@ public class SpotifyDataSyncService : ISpotifyDataSyncService
         foreach (var timeRange in TimeRanges)
         {
             var timeRangeStr = timeRange.ToApiString();
-            var tracks  = await _spotifyApiClient.GetTopTracksAsync(accessToken, timeRange); //poziva GetTopTracksAsync i GetTopArtistsAsync da dohvati top pjesme i top izvođače korisnika sa Spotify-a za taj vremenski interval.
+            var tracks  = await _spotifyApiClient.GetTopTracksAsync(accessToken, timeRange);
             var artists = await _spotifyApiClient.GetTopArtistsAsync(accessToken, timeRange);
 
             await _topTrackRepository.DeleteByUserAndTimeRangeAsync(userId, timeRangeStr);

@@ -208,11 +208,11 @@
                                 <button class="feedback-btn @(feedback.GetValueOrDefault(track.Id) == FeedbackTypes.Like ? "feedback-active-like" : "")"
                                         aria-label="Like"
                                         @onclick="() => ToggleFeedback(track, FeedbackTypes.Like)"
-                                        @onclick:stopPropagation="true">&#128077;</button>
+                                        @onclick:stopPropagation="true"><i class="fa-regular fa-thumbs-up"></i></button>
                                 <button class="feedback-btn @(feedback.GetValueOrDefault(track.Id) == FeedbackTypes.Skip ? "feedback-active-skip" : "")"
                                         aria-label="Dislike"
                                         @onclick="() => ToggleFeedback(track, FeedbackTypes.Skip)"
-                                        @onclick:stopPropagation="true">&#128078;</button>
+                                        @onclick:stopPropagation="true"><i class="fa-regular fa-thumbs-down"></i></button>
                             </div>
                         </div>
                     }

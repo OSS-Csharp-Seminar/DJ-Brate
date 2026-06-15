@@ -363,7 +363,8 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 1.05rem;
+    color: white;
     padding: 0.2rem 0.4rem;
     border-radius: 6px;
     opacity: 0.3;
@@ -380,8 +381,16 @@
     opacity: 1 !important;
 }
 
+.feedback-active-like i {
+    font-weight: 900;
+}
+
 .feedback-active-skip {
     opacity: 1 !important;
+}
+
+.feedback-active-skip i {
+    font-weight: 900;
 }
 
 .track-row {
